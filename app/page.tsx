@@ -15,7 +15,7 @@ export default function Dashboard() {
     const bahanArray = inventaris.split(',').map(b => b.trim()).filter(b => b !== '');
 
     try {
-      const res = await fetch('http://127.0.0.1:8080/api/v1/recommendations', {
+      const res = await fetch('https://nachsyas-smart-kitchen-assistant-api.hf.space', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ aset_inventaris: bahanArray }) 
