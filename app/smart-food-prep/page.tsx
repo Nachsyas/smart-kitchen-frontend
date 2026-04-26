@@ -6,7 +6,6 @@ export default function SmartFoodPrepDashboard() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   
-  // MURNI KOSONG: Tidak ada lagi data dummy di awal.
   const [recommendations, setRecommendations] = useState<any[]>([]);
 
   const [weeklyPlan, setWeeklyPlan] = useState<Record<string, any[]>>({
@@ -17,12 +16,11 @@ export default function SmartFoodPrepDashboard() {
   const [selectedDayModal, setSelectedDayModal] = useState('Senin');
   const [activeDay, setActiveDay] = useState('Senin');
 
-  // ================= FUNGSI PENCARIAN PURE AI (STRICT MODE) =================
+  // ================= FUNGSI PENCARIAN PURE AI =================
   const handleSearch = async () => {
     if (!input.trim()) return;
     setLoading(true);
 
-    // Konteks murni untuk dikirim ke API Golang
     let contextKeyword = input;
     if (activeTab === 'Beli Makanan') {
       contextKeyword = `Rekomendasi beli makanan jadi/restoran untuk keyword: ${input}`; 
@@ -33,7 +31,6 @@ export default function SmartFoodPrepDashboard() {
     const bahanArray = contextKeyword.split(',').map(b => b.trim()).filter(b => b !== '');
     
     try {
-      // Menembak langsung ke API Golang (Hugging Face) yang sudah terhubung ke Gemini
       const res = await fetch('https://nachsyas-smart-kitchen-assistant-api.hf.space/api/v1/recommendations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -43,19 +40,13 @@ export default function SmartFoodPrepDashboard() {
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
       const rawData = await res.json();
-      
-      // Mengantisipasi cara Golang membungkus array JSON
       const dataList = Array.isArray(rawData) ? rawData : (rawData.data || rawData.recommendations || []);
       
       if (dataList && dataList.length > 0) {
         const formattedData = dataList.map((item: any, index: number) => {
-          // STRICT PARSING: Tangkap nama dari berbagai kemungkinan variasi key AI
           const namaMenu = item.nama || item.Nama || item.nama_menu || item.Nama_menu || item.Menu || item.menu || "Format AI Tidak Dikenali";
-          
-          // STRICT PARSING: Tidak ada lagi Math.random(). Jika AI tidak kasih angka, catat sebagai 0 (Validasi Data Asli).
           const kaloriRaw = item.kalori || item.Kalori || item.kalori_estimasi;
           const kalori = typeof kaloriRaw === 'number' ? kaloriRaw : parseInt(kaloriRaw) || 0;
-
           const proteinRaw = item.protein || item.Protein || item.protein_estimasi;
           const protein = typeof proteinRaw === 'number' ? proteinRaw : parseInt(proteinRaw) || 0;
 
@@ -68,7 +59,6 @@ export default function SmartFoodPrepDashboard() {
         });
         setRecommendations(formattedData);
       } else {
-         // Jika backend merespons tapi array kosong, bersihkan layar
          setRecommendations([]);
       }
     } catch (error) {
@@ -111,7 +101,7 @@ export default function SmartFoodPrepDashboard() {
     setWeeklyPlan(prev => ({ ...prev, [day]: newDayPlan }));
   };
 
-  // ================= KALKULASI GIZI DINAMIS =================
+  // ================= KALKULASI GIZI =================
   const currentDayMeals = weeklyPlan[activeDay];
   const totalKalori = currentDayMeals.reduce((sum, meal) => sum + meal.kalori, 0);
   const totalProtein = currentDayMeals.reduce((sum, meal) => sum + meal.protein, 0);
@@ -176,38 +166,41 @@ export default function SmartFoodPrepDashboard() {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-3 md:space-y-4 custom-scrollbar relative">
-          <h3 className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-emerald-500 mb-2 md:mb-4">Pilihan Menu Buat Kamu</h3>
+        {/* PERBAIKAN LOADING UI: Flex layout agar tidak bentrok dengan scroll */}
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar flex flex-col relative">
+          <h3 className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-emerald-500 mb-4 shrink-0">Pilihan Menu Buat Kamu</h3>
           
-          {loading && (
-             <div className="absolute inset-0 bg-[#050505]/80 backdrop-blur-sm flex flex-col items-center justify-center z-10">
-                <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                <p className="text-emerald-400 font-medium text-xs tracking-widest uppercase animate-pulse">Menghubungkan ke Gemini...</p>
+          {loading ? (
+             <div className="flex-1 flex flex-col items-center justify-center pb-10">
+                <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                <p className="text-emerald-400 font-bold text-xs tracking-widest uppercase animate-pulse">Menghubungkan ke Gemini...</p>
              </div>
-          )}
-
-          {recommendations.length === 0 && !loading ? (
-             <div className="text-center text-gray-500 text-sm mt-10">
-               {input.trim() === '' ? 'Ketikkan makanan favoritmu di atas ya!' : 'Tidak ada rekomendasi, coba kata kunci lain.'}
+          ) : recommendations.length === 0 ? (
+             <div className="flex-1 flex items-center justify-center pb-10">
+               <p className="text-center text-gray-500 text-sm">
+                 {input.trim() === '' ? 'Ketikkan makanan favoritmu di atas ya!' : 'Tidak ada rekomendasi, coba kata kunci lain.'}
+               </p>
              </div>
           ) : (
-            recommendations.map((meal) => (
-              <div 
-                key={meal.id}
-                draggable
-                onDragStart={(e) => handleDragStart(e, meal)}
-                className="bg-white/5 border border-white/10 p-3 md:p-5 rounded-xl md:rounded-2xl cursor-grab active:cursor-grabbing hover:bg-white/10 hover:border-emerald-500/30 transition-all group relative"
-              >
-                <h4 className="font-bold text-sm md:text-base mb-1 pr-6 leading-snug">{meal.nama}</h4>
-                <p className="text-xs md:text-sm text-gray-400 mt-2">{meal.kalori} kalori • {meal.protein}g protein</p>
-                <button 
-                  onClick={() => setSelectedMeal(meal)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 md:w-10 md:h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center md:opacity-0 group-hover:opacity-100 transition-opacity hover:bg-emerald-500 hover:text-black font-bold text-lg md:text-xl shadow-lg"
+            <div className="space-y-3 md:space-y-4 pb-4">
+              {recommendations.map((meal) => (
+                <div 
+                  key={meal.id}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, meal)}
+                  className="bg-white/5 border border-white/10 p-3 md:p-5 rounded-xl md:rounded-2xl cursor-grab active:cursor-grabbing hover:bg-white/10 hover:border-emerald-500/30 transition-all group relative"
                 >
-                  +
-                </button>
-              </div>
-            ))
+                  <h4 className="font-bold text-sm md:text-base mb-1 pr-6 leading-snug">{meal.nama}</h4>
+                  <p className="text-xs md:text-sm text-gray-400 mt-2">{meal.kalori} kalori • {meal.protein}g protein</p>
+                  <button 
+                    onClick={() => setSelectedMeal(meal)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 md:w-10 md:h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center md:opacity-0 group-hover:opacity-100 transition-opacity hover:bg-emerald-500 hover:text-black font-bold text-lg md:text-xl shadow-lg"
+                  >
+                    +
+                  </button>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </aside>
