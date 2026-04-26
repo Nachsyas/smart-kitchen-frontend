@@ -1,125 +1,104 @@
-'use client';
-import MenuCard from '@/components/MenuCard';
 import Link from 'next/link';
-import { useState } from 'react';
 
-export default function Dashboard() {
-  const [inventaris, setInventaris] = useState('');
-  const [menus, setMenus] = useState([]);
-  const [loading, setLoading] = useState(false);
-
-  const analyzeKitchen = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inventaris.trim()) return;
-    
-    setLoading(true);
-    const bahanArray = inventaris.split(',').map(b => b.trim()).filter(b => b !== '');
-
-    try {
-      const res = await fetch('https://nachsyas-smart-kitchen-assistant-api.hf.space/api/v1/recommendations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ aset_inventaris: bahanArray }) 
-      });
-      
-      const data = await res.json();
-      setMenus(data || []);
-    } catch (error) {
-      console.error("Gagal menghubungi server AI:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+export default function Home() {
   return (
-    <main className="min-h-screen bg-[#000000] selection:bg-emerald-500/30 selection:text-emerald-200 relative overflow-hidden px-6 py-20 md:py-32 flex flex-col">
+    <main className="min-h-screen bg-[#FDFBF7] text-slate-800 font-sans relative overflow-x-hidden">
       
-      {/* Keyframe Injector */}
-      <style dangerouslySetInnerHTML={{__html: `
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}} />
+      {/* VEKTOR BACKGROUND (Pattern SVG Transparan) */}
+      <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23f59e0b\' fill-opacity=\'1\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }}></div>
 
-      {/* Ambient Glow Effects */}
-      <div className="absolute top-[-20%] left-[50%] translate-x-[-50%] w-[80%] md:w-[50%] h-[400px] bg-emerald-600/20 rounded-full blur-[120px] pointer-events-none opacity-50"></div>
-      
-      <div className="max-w-4xl w-full mx-auto relative z-10 flex-1 flex flex-col">
-        
-        {/* HEADER TUNGGAL YANG BENAR */}
-        <header className="mb-16 text-center animate-[fadeInUp_0.8s_ease-out_both]">
-          <div className="inline-flex items-center justify-center px-4 py-1.5 mb-8 text-[11px] font-bold tracking-[0.2em] text-emerald-400 uppercase bg-emerald-500/10 border border-emerald-500/20 rounded-full backdrop-blur-md">
-            Smart Kitchen AI
+      {/* NAVBAR */}
+      <nav className="w-full max-w-7xl mx-auto p-6 flex justify-between items-center relative z-10">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-emerald-600 text-2xl shadow-sm border border-emerald-50">🥑</div>
+          <div>
+            <h1 className="font-extrabold text-2xl text-slate-800 tracking-tight">SmartFood Prep</h1>
+            <p className="text-[10px] uppercase tracking-widest text-emerald-500 font-bold">AI Nutrition Assistant</p>
           </div>
-          <h1 className="text-5xl md:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-gray-500 tracking-tighter mb-6 leading-tight">
-            Menu Harian Anda.
-          </h1>
-          <p className="text-gray-400 max-w-lg mx-auto text-base md:text-lg leading-relaxed font-medium mb-8">
-            Ketikkan Aset / Inventaris yang tersedia. Biarkan kecerdasan buatan meracik rekomendasinya.
-          </p>
-
-          {/* TOMBOL NAVIGASI KE FITUR BARU */}
-          <div className="flex justify-center gap-4 animate-[fadeInUp_1s_ease-out_both]">
-            <Link href="/profile-setup" className="px-6 py-3 rounded-xl bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30 hover:bg-emerald-500/40 transition-colors">
-              Setel Profil Medis
-            </Link>
-            <Link href="/smart-food-prep" className="px-6 py-3 rounded-xl bg-white text-black font-bold hover:scale-105 transition-transform shadow-[0_0_40px_rgba(255,255,255,0.3)]">
-              Buka Smart Food Prep ✨
-            </Link>
-          </div>
-        </header>
-
-        {/* Form Input Sekelas Command Palette */}
-        <form onSubmit={analyzeKitchen} className="mb-20 flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto w-full animate-[fadeInUp_1s_ease-out_both]">
-          <div className="relative flex-1 group">
-            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500"></div>
-            <input 
-              type="text" 
-              value={inventaris}
-              onChange={(e) => setInventaris(e.target.value)}
-              placeholder="Misal: Tahu, Kecap, Bawang Putih..." 
-              className="relative w-full px-6 py-5 rounded-2xl bg-white/[0.03] border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500/50 focus:bg-white/[0.05] transition-all duration-300 backdrop-blur-xl text-lg shadow-2xl"
-              required
-            />
-          </div>
-          <button 
-            type="submit" 
-            disabled={loading}
-            className="relative sm:w-auto px-8 py-5 rounded-2xl bg-white text-black font-bold tracking-wide transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <span className="flex items-center gap-2">
-                <svg className="animate-spin h-5 w-5 text-black" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Memproses
-              </span>
-            ) : 'Analisis'}
-          </button>
-        </form>
-
-        {/* Hasil Rekomendasi */}
-        <div className="flex-1">
-          {menus?.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-              {menus.map((menu: any, index: number) => (
-                <MenuCard key={index} menu={menu} delay={index * 0.15} />
-              ))}
-            </div>
-          ) : (
-             <div className="text-center p-12 mt-10 opacity-50 flex flex-col items-center animate-[fadeInUp_1.2s_ease-out_both]">
-               <div className="w-16 h-16 mb-4 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
-                 <svg className="w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                 </svg>
-               </div>
-               <p className="text-gray-500 font-medium tracking-wide">Menunggu data masukan...</p>
-             </div>
-          )}
         </div>
-      </div>
+        <Link href="/smart-food-prep" className="hidden md:inline-flex px-6 py-3 bg-white text-slate-700 font-extrabold rounded-xl hover:bg-slate-50 transition-all shadow-sm border border-slate-200">
+          Masuk ke Dashboard
+        </Link>
+      </nav>
+
+      {/* HERO SECTION */}
+      <section className="relative z-10 max-w-7xl mx-auto px-6 pt-16 pb-20 md:pt-24 md:pb-32 flex flex-col items-center text-center">
+        <span className="px-4 py-1.5 rounded-full bg-orange-100 text-orange-600 text-xs font-extrabold uppercase tracking-widest mb-6 inline-block">
+          💡 Kesadaran Nutrisi Dimulai Dari Sini
+        </span>
+        <h2 className="text-4xl md:text-6xl font-black text-slate-800 leading-tight max-w-4xl mb-6">
+          Makan Sehat Bukan Tentang Diet Ketat, Tapi <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-emerald-400">Nutrisi yang Tepat.</span>
+        </h2>
+        <p className="text-lg text-slate-500 max-w-2xl mb-10 font-medium leading-relaxed">
+          Sering bingung hari ini mau makan apa yang bergizi tapi tetap enak? Kenali kebutuhan tubuhmu, pahami nutrisinya, dan biarkan AI kami meracik menu harianmu.
+        </p>
+        
+        <Link href="/smart-food-prep" className="px-8 py-4 bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-white font-extrabold text-lg rounded-2xl shadow-[0_10px_30px_rgba(16,185,129,0.3)] transition-all transform hover:-translate-y-1">
+          Mulai Racik Menu AI Sekarang 🚀
+        </Link>
+      </section>
+
+      {/* KUTIPAN KESEHATAN (QUOTE) */}
+      <section className="relative z-10 bg-white/60 backdrop-blur-md border-y border-slate-100 py-16">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <p className="text-2xl md:text-3xl font-bold text-slate-700 italic leading-snug">
+            "Satu-satunya cara untuk menjaga kesehatan adalah makan apa yang tidak Anda inginkan, minum apa yang tidak Anda sukai, dan lakukan apa yang lebih baik Anda hindari... 
+            <span className="text-emerald-500 block mt-4 font-black not-italic text-4xl">Itu Dulu!</span>"
+          </p>
+          <p className="mt-6 text-slate-500 font-medium">
+            Kini, dengan algoritma AI yang cerdas, Anda bisa makan hidangan yang lezat sekaligus memenuhi target nutrisi klinis. Tidak ada lagi makanan sehat yang membosankan.
+          </p>
+        </div>
+      </section>
+
+      {/* EDUKASI NUTRISI (ARTIKEL PENDEK) */}
+      <section className="relative z-10 max-w-7xl mx-auto px-6 py-24">
+        <div className="text-center mb-16">
+          <h3 className="text-3xl font-black text-slate-800 mb-4">Pahami Piring Anda 🍽️</h3>
+          <p className="text-slate-500 font-medium">Kenali 3 makronutrien utama yang membangun tubuh dan energimu.</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Card Protein */}
+          <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-xl transition-all hover:border-blue-200 group">
+            <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:scale-110 transition-transform">🥩</div>
+            <h4 className="text-xl font-extrabold text-slate-800 mb-3">Protein (Pembangun)</h4>
+            <p className="text-slate-500 text-sm leading-relaxed font-medium">
+              Protein bukan cuma buat atlet! Ini adalah batu bata pembangun sel, otot, dan imun tubuh. AI kami memastikan kamu mendapat asupan asam amino yang cukup dari ayam, ikan, tahu, maupun tempe.
+            </p>
+          </div>
+
+          {/* Card Karbohidrat */}
+          <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-xl transition-all hover:border-orange-200 group">
+            <div className="w-16 h-16 bg-orange-50 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:scale-110 transition-transform">🍚</div>
+            <h4 className="text-xl font-extrabold text-slate-800 mb-3">Karbohidrat (Energi)</h4>
+            <p className="text-slate-500 text-sm leading-relaxed font-medium">
+              Jangan musuhi karbohidrat. Otak dan tubuhmu butuh bensin untuk berpikir dan bergerak. Kuncinya ada pada porsi dan jenisnya. SmartFood Prep akan menghitung takaran energi yang pas untukmu.
+            </p>
+          </div>
+
+          {/* Card Lemak */}
+          <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-xl transition-all hover:border-rose-200 group">
+            <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:scale-110 transition-transform">🥑</div>
+            <h4 className="text-xl font-extrabold text-slate-800 mb-3">Lemak Baik (Pelindung)</h4>
+            <p className="text-slate-500 text-sm leading-relaxed font-medium">
+              Tubuh butuh lemak baik untuk menyerap vitamin dan melindungi organ. Alpukat, kacang-kacangan, dan minyak zaitun adalah teman baikmu. Kami menakar lemak agar tetap aman dan sehat.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER CALL TO ACTION */}
+      <footer className="relative z-10 bg-slate-900 text-white py-16 text-center rounded-t-[3rem] mt-10">
+        <h3 className="text-3xl font-black mb-6">Sudah Siap Mengubah Pola Makanmu?</h3>
+        <p className="text-slate-400 mb-8 max-w-xl mx-auto">
+          Tinggalkan cara lama menebak-nebak kalori. Biarkan Gemini AI mengurus perhitungannya untukmu secara gratis dan real-time.
+        </p>
+        <Link href="/smart-food-prep" className="px-8 py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-extrabold rounded-xl transition-colors inline-block">
+          Buka Dashboard Sekarang
+        </Link>
+      </footer>
+
     </main>
   );
 }
