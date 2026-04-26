@@ -1,5 +1,6 @@
 'use client';
 import MenuCard from '@/components/MenuCard';
+import Link from 'next/link';
 import { useState } from 'react';
 
 export default function Dashboard() {
@@ -55,6 +56,28 @@ export default function Dashboard() {
           <p className="text-gray-400 max-w-lg mx-auto text-base md:text-lg leading-relaxed font-medium">
             Ketikkan Aset / Inventaris yang tersedia. Biarkan kecerdasan buatan meracik rekomendasinya.
           </p>
+        </header>
+
+        <header className="mb-16 text-center animate-[fadeInUp_0.8s_ease-out_both]">
+          <div className="inline-flex items-center justify-center px-4 py-1.5 mb-8 text-[11px] font-bold tracking-[0.2em] text-emerald-400 uppercase bg-emerald-500/10 border border-emerald-500/20 rounded-full backdrop-blur-md">
+            Smart Kitchen AI
+          </div>
+          <h1 className="text-5xl md:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-gray-500 tracking-tighter mb-6 leading-tight">
+            Menu Harian Anda.
+          </h1>
+          <p className="text-gray-400 max-w-lg mx-auto text-base md:text-lg leading-relaxed font-medium mb-8">
+            Ketikkan Aset / Inventaris yang tersedia. Biarkan kecerdasan buatan meracik rekomendasinya.
+          </p>
+
+          {/* TOMBOL NAVIGASI KE FITUR BARU */}
+          <div className="flex justify-center gap-4 animate-[fadeInUp_1s_ease-out_both]">
+            <Link href="/profile-setup" className="px-6 py-3 rounded-xl bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30 hover:bg-emerald-500/40 transition-colors">
+              Setel Profil Medis
+            </Link>
+            <Link href="/smart-food-prep" className="px-6 py-3 rounded-xl bg-white text-black font-bold hover:scale-105 transition-transform">
+              Buka Smart Food Prep ✨
+            </Link>
+          </div>
         </header>
 
         {/* Form Input Sekelas Command Palette */}
