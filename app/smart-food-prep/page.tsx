@@ -1,33 +1,27 @@
 'use client';
-import { useState } from 'react';
 import NutritionChart from '@/components/NutritionChart';
+import { useState } from 'react';
 
 export default function SmartFoodPrep() {
-  const [activeTab, setActiveTab] = useState('Siang'); // Pagi, Siang, Malam, Camilan
-  const [mode, setMode] = useState('ingredients'); // 'keyword' atau 'ingredients'
+  const [activeTab, setActiveTab] = useState('Siang'); 
+  const [mode, setMode] = useState('ingredients'); 
   const [input, setInput] = useState('');
-  const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Mock data untuk simulasi gizi harian (nanti ditarik dari Supabase)
   const dailyNutrition = { kalori: 1200, target: 2000, gula: 15, batas_gula: 50 };
 
   const handleAnalyze = async () => {
     setLoading(true);
-    // Panggil endpoint backend /api/v2/food-prep
-    // ... logic fetch ...
-    setLoading(false);
+    setTimeout(() => setLoading(false), 2000); // Simulasi loading untuk saat ini
   };
 
   return (
     <main className="min-h-screen bg-[#050505] text-white p-6 md:p-12">
-      {/* Header & Nutrition Overview */}
       <section className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
         <div className="md:col-span-2 p-8 rounded-3xl bg-white/[0.03] border border-white/10 backdrop-blur-md">
           <h1 className="text-4xl font-bold mb-2">Smart Food Prep</h1>
           <p className="text-gray-400">Rencanakan nutrisi Anda berdasarkan kondisi biologis.</p>
           
-          {/* Visualisasi Gizi Sederhana */}
           <div className="flex gap-8 mt-8">
             <div className="text-center">
               <div className="text-2xl font-mono text-emerald-400">{(dailyNutrition.kalori / dailyNutrition.target * 100).toFixed(0)}%</div>
@@ -40,7 +34,6 @@ export default function SmartFoodPrep() {
           </div>
         </div>
         
-        {/* Profile Summary Card */}
         <div className="p-8 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 backdrop-blur-md">
           <h3 className="font-bold text-emerald-400 mb-4">Profil Medis</h3>
           <ul className="text-sm space-y-2 text-gray-300">
@@ -51,12 +44,11 @@ export default function SmartFoodPrep() {
         </div>
       </section>
 
-      {/* Control Center */}
-      <section className="max-w-6xl mx-auto mt-12">
-   <NutritionChart />
-</section>
-        
-        {/* Meal Time Tabs */}
+      <section className="max-w-6xl mx-auto mb-12">
+         <NutritionChart />
+      </section>
+
+      <section className="max-w-4xl mx-auto">
         <div className="flex justify-center gap-4 mb-8">
           {['Pagi', 'Siang', 'Malam', 'Camilan'].map((time) => (
             <button 
@@ -69,7 +61,6 @@ export default function SmartFoodPrep() {
           ))}
         </div>
 
-        {/* Input Area */}
         <div className="bg-white/[0.02] border border-white/10 p-4 rounded-2xl flex flex-col gap-4">
            <div className="flex border-b border-white/5 pb-2">
               <button onClick={() => setMode('ingredients')} className={`flex-1 py-2 text-xs font-bold uppercase tracking-widest ${mode === 'ingredients' ? 'text-emerald-400' : 'text-gray-600'}`}>Bahan Baku</button>
