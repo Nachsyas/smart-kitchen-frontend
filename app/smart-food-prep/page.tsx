@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 export default function SmartFoodPrepDashboard() {
@@ -133,6 +134,11 @@ export default function SmartFoodPrepDashboard() {
       <aside className="w-full md:w-[380px] lg:w-[420px] shrink-0 h-[50vh] md:h-screen bg-white/90 backdrop-blur-xl border-r border-emerald-100 flex flex-col z-20 shadow-2xl">
         <div className="p-4 md:p-6 border-b border-emerald-50 shrink-0">
           
+          {/* TOMBOL KEMBALI KE BERANDA */}
+          <Link href="/" className="inline-flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-widest text-slate-400 hover:text-emerald-500 transition-colors mb-4">
+            <span className="text-sm">←</span> Kembali ke Beranda
+          </Link>
+
           {/* Header Brand */}
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600 text-xl shadow-sm">🥑</div>
