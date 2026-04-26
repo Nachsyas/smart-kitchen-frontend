@@ -6,10 +6,8 @@ export default function SmartFoodPrepDashboard() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const [recommendations, setRecommendations] = useState<any[]>([
-    { id: 1, nama: 'Soto Ayam Kuah Bening', kalori: 320, protein: 25 },
-    { id: 2, nama: 'Tumis Tahu Brokoli', kalori: 180, protein: 12 },
-  ]);
+  // MURNI KOSONG: Tidak ada lagi data dummy di awal.
+  const [recommendations, setRecommendations] = useState<any[]>([]);
 
   const [weeklyPlan, setWeeklyPlan] = useState<Record<string, any[]>>({
     Senin: [], Selasa: [], Rabu: [], Kamis: [], Jumat: [], Sabtu: [], Minggu: []
@@ -19,68 +17,64 @@ export default function SmartFoodPrepDashboard() {
   const [selectedDayModal, setSelectedDayModal] = useState('Senin');
   const [activeDay, setActiveDay] = useState('Senin');
 
-  // ================= FUNGSI PENCARIAN & VARIASI MENU SUPER LENGKAP =================
+  // ================= FUNGSI PENCARIAN PURE AI (STRICT MODE) =================
   const handleSearch = async () => {
     if (!input.trim()) return;
     setLoading(true);
 
-    if (activeTab === 'Masak Sendiri') {
-      const bahanArray = input.split(',').map(b => b.trim()).filter(b => b !== '');
-      try {
-        const res = await fetch('https://nachsyas-smart-kitchen-assistant-api.hf.space/api/v1/recommendations', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ aset_inventaris: bahanArray }) 
-        });
-        
-        const data = await res.json();
-        
-        if (data && Array.isArray(data)) {
-          const formattedData = data.map((item: any, index: number) => ({
-            id: Date.now() + index,
-            nama: item.Menu || item.nama_menu || item.Nama || "Menu AI Spesial",
-            kalori: parseInt(item.Kalori) || Math.floor(Math.random() * 200) + 150,
-            protein: parseInt(item.Protein) || Math.floor(Math.random() * 20) + 5,
-          }));
-          setRecommendations(formattedData);
-        }
-      } catch (error) {
-        console.error("Gagal menghubungi server AI:", error);
-      }
+    // Konteks murni untuk dikirim ke API Golang
+    let contextKeyword = input;
+    if (activeTab === 'Beli Makanan') {
+      contextKeyword = `Rekomendasi beli makanan jadi/restoran untuk keyword: ${input}`; 
     } else {
-      // LOGIKA BARU: Variasi Menu Beli Makanan yang Sangat Ekstensif!
-      const kataKunci = input.trim().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-      
-      const variasiKuliner = [
-        `${kataKunci} Bakar Madu Spesial`,
-        `${kataKunci} Goreng Krispi + Nasi Hangat`,
-        `${kataKunci} Geprek Sambal Bawang Level 5`,
-        `${kataKunci} Penyet + Sambal Terasi Mentah`,
-        `Katsu ${kataKunci} Saus Curry Jepang`,
-        `Rice Bowl ${kataKunci} Teriyaki`,
-        `Rendang ${kataKunci} Bumbu Minang Asli`,
-        `${kataKunci} Rica-Rica Pedas Daun Jeruk`,
-        `Dimsum ${kataKunci} Saus Mentai`,
-        `Sate ${kataKunci} Bumbu Kacang Kental`,
-        `Burger ${kataKunci} Extra Cheese`,
-        `${kataKunci} Woku Belanga Kemangi`,
-        `Nasi Bakar ${kataKunci} Suwir Kemangi`,
-        `Salad Sayur + Dada ${kataKunci} Panggang`,
-        `Bakmi Kesukaan + Topping ${kataKunci} Cincang`,
-        `Steak ${kataKunci} Hotplate Saus Jamur`,
-        `${kataKunci} Betutu Khas Bali`,
-        `Sup Tulang ${kataKunci} Kuah Gurih`
-      ];
+      contextKeyword = `Rekomendasi masak dengan bahan mentah: ${input}`;
+    }
 
-      setTimeout(() => {
-        const hasilBeli = variasiKuliner.map((namaMenu, index) => ({
-          id: Date.now() + index,
-          nama: namaMenu,
-          kalori: Math.floor(Math.random() * 400) + 150, // Kalori random 150-550
-          protein: Math.floor(Math.random() * 30) + 10,  // Protein random 10-40g
-        }));
-        setRecommendations(hasilBeli);
-      }, 1500);
+    const bahanArray = contextKeyword.split(',').map(b => b.trim()).filter(b => b !== '');
+    
+    try {
+      // Menembak langsung ke API Golang (Hugging Face) yang sudah terhubung ke Gemini
+      const res = await fetch('https://nachsyas-smart-kitchen-assistant-api.hf.space/api/v1/recommendations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ aset_inventaris: bahanArray }) 
+      });
+      
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+      const rawData = await res.json();
+      
+      // Mengantisipasi cara Golang membungkus array JSON
+      const dataList = Array.isArray(rawData) ? rawData : (rawData.data || rawData.recommendations || []);
+      
+      if (dataList && dataList.length > 0) {
+        const formattedData = dataList.map((item: any, index: number) => {
+          // STRICT PARSING: Tangkap nama dari berbagai kemungkinan variasi key AI
+          const namaMenu = item.nama || item.Nama || item.nama_menu || item.Nama_menu || item.Menu || item.menu || "Format AI Tidak Dikenali";
+          
+          // STRICT PARSING: Tidak ada lagi Math.random(). Jika AI tidak kasih angka, catat sebagai 0 (Validasi Data Asli).
+          const kaloriRaw = item.kalori || item.Kalori || item.kalori_estimasi;
+          const kalori = typeof kaloriRaw === 'number' ? kaloriRaw : parseInt(kaloriRaw) || 0;
+
+          const proteinRaw = item.protein || item.Protein || item.protein_estimasi;
+          const protein = typeof proteinRaw === 'number' ? proteinRaw : parseInt(proteinRaw) || 0;
+
+          return {
+            id: Date.now() + index,
+            nama: namaMenu,
+            kalori: kalori,
+            protein: protein,
+          };
+        });
+        setRecommendations(formattedData);
+      } else {
+         // Jika backend merespons tapi array kosong, bersihkan layar
+         setRecommendations([]);
+      }
+    } catch (error) {
+      console.error("Gagal terhubung ke Backend AI:", error);
+      alert("Gagal mengambil data dari server AI. Pastikan backend berjalan.");
+      setRecommendations([]);
     }
     
     setLoading(false);
@@ -117,7 +111,7 @@ export default function SmartFoodPrepDashboard() {
     setWeeklyPlan(prev => ({ ...prev, [day]: newDayPlan }));
   };
 
-  // ================= KALKULASI GIZI =================
+  // ================= KALKULASI GIZI DINAMIS =================
   const currentDayMeals = weeklyPlan[activeDay];
   const totalKalori = currentDayMeals.reduce((sum, meal) => sum + meal.kalori, 0);
   const totalProtein = currentDayMeals.reduce((sum, meal) => sum + meal.protein, 0);
@@ -137,18 +131,18 @@ export default function SmartFoodPrepDashboard() {
   return (
     <main className="h-screen w-full bg-[#050505] text-white flex flex-col md:flex-row overflow-hidden font-sans">
       
-      {/* ================= 1. SIDEBAR ================= */}
+      {/* ================= 1. SIDEBAR KONTROL ================= */}
       <aside className="w-full md:w-[380px] lg:w-[420px] shrink-0 h-[50vh] md:h-screen border-b md:border-b-0 md:border-r border-white/10 bg-white/[0.02] flex flex-col z-20">
         <div className="p-4 md:p-6 border-b border-white/10 shrink-0">
           <div className="flex bg-black/40 rounded-xl p-1 mb-4 border border-white/5">
             <button 
-              onClick={() => setActiveTab('Beli Makanan')}
+              onClick={() => { setActiveTab('Beli Makanan'); setRecommendations([]); }}
               className={`flex-1 py-2 md:py-3 text-xs md:text-sm font-bold rounded-lg transition-all ${activeTab === 'Beli Makanan' ? 'bg-emerald-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}
             >
               Beli Makanan
             </button>
             <button 
-              onClick={() => setActiveTab('Masak Sendiri')}
+              onClick={() => { setActiveTab('Masak Sendiri'); setRecommendations([]); }}
               className={`flex-1 py-2 md:py-3 text-xs md:text-sm font-bold rounded-lg transition-all ${activeTab === 'Masak Sendiri' ? 'bg-emerald-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}
             >
               Masak Sendiri
@@ -156,7 +150,7 @@ export default function SmartFoodPrepDashboard() {
           </div>
           
           <textarea 
-            placeholder={activeTab === 'Beli Makanan' ? "Mau beli lauk apa? (Misal: Ayam, Udang, Jamur)..." : "Ketik bahan yang kamu punya (Misal: Telur, Bayam)..."}
+            placeholder={activeTab === 'Beli Makanan' ? "Mau beli lauk apa? (Misal: Salad, Ayam, Ikan)..." : "Ketik bahan yang kamu punya (Misal: Telur, Bayam)..."}
             className="w-full h-16 md:h-20 bg-black/40 border border-white/10 rounded-xl p-3 md:p-4 text-sm focus:outline-none focus:border-emerald-500/50 transition-colors resize-none shadow-inner mb-3"
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -174,7 +168,7 @@ export default function SmartFoodPrepDashboard() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Meracik Menu...
+                Meracik Menu AI...
               </>
             ) : (
               activeTab === 'Beli Makanan' ? 'Cari Ide Makanan Beli' : 'Racik Menu dengan AI'
@@ -188,12 +182,14 @@ export default function SmartFoodPrepDashboard() {
           {loading && (
              <div className="absolute inset-0 bg-[#050505]/80 backdrop-blur-sm flex flex-col items-center justify-center z-10">
                 <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                <p className="text-emerald-400 font-medium text-xs tracking-widest uppercase animate-pulse">Menyiapkan Rekomendasi...</p>
+                <p className="text-emerald-400 font-medium text-xs tracking-widest uppercase animate-pulse">Menghubungkan ke Gemini...</p>
              </div>
           )}
 
           {recommendations.length === 0 && !loading ? (
-             <div className="text-center text-gray-500 text-sm mt-10">Ketikkan makanan favoritmu di atas ya!</div>
+             <div className="text-center text-gray-500 text-sm mt-10">
+               {input.trim() === '' ? 'Ketikkan makanan favoritmu di atas ya!' : 'Tidak ada rekomendasi, coba kata kunci lain.'}
+             </div>
           ) : (
             recommendations.map((meal) => (
               <div 
@@ -206,7 +202,7 @@ export default function SmartFoodPrepDashboard() {
                 <p className="text-xs md:text-sm text-gray-400 mt-2">{meal.kalori} kalori • {meal.protein}g protein</p>
                 <button 
                   onClick={() => setSelectedMeal(meal)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 md:w-10 md:h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center md:opacity-0 group-hover:opacity-100 transition-opacity hover:bg-emerald-500 hover:text-black font-bold text-lg md:text-xl"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 md:w-10 md:h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center md:opacity-0 group-hover:opacity-100 transition-opacity hover:bg-emerald-500 hover:text-black font-bold text-lg md:text-xl shadow-lg"
                 >
                   +
                 </button>
@@ -216,10 +212,10 @@ export default function SmartFoodPrepDashboard() {
         </div>
       </aside>
 
-      {/* ================= 2. AREA UTAMA ================= */}
+      {/* ================= 2. AREA UTAMA (DASHBOARD) ================= */}
       <section className="flex-1 flex flex-col h-[50vh] md:h-screen relative min-w-0">
         
-        {/* Top: Weekly Planner */}
+        {/* Top: Weekly Planner Horizontal */}
         <div className="flex-1 overflow-x-auto overflow-y-hidden p-4 md:p-6 pb-6 md:pb-8 flex gap-4 md:gap-6 custom-scrollbar bg-gradient-to-br from-transparent to-emerald-900/10">
           {Object.keys(weeklyPlan).map((day) => (
             <div 
@@ -250,7 +246,7 @@ export default function SmartFoodPrepDashboard() {
                       <p className="text-[10px] md:text-xs text-gray-400 mt-1">{meal.kalori} kalori</p>
                       <button 
                         onClick={(e) => { e.stopPropagation(); removeMeal(day, index); }}
-                        className="absolute right-2 top-2 text-red-400 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-300 font-bold text-sm"
+                        className="absolute right-2 top-2 w-6 h-6 flex items-center justify-center bg-red-500/20 rounded-full text-red-400 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white font-bold text-xs"
                       >
                         ✕
                       </button>
@@ -287,12 +283,12 @@ export default function SmartFoodPrepDashboard() {
            </div>
         </div>
 
-        {/* MODAL / POPUP */}
+        {/* ================= MODAL TAMBAH KE JADWAL ================= */}
         {selectedMeal && (
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 pointer-events-auto">
             <div className="bg-[#111] border border-white/10 p-6 md:p-8 rounded-2xl md:rounded-3xl w-full max-w-md shadow-2xl animate-[fadeInUp_0.2s_ease-out]">
               <h3 className="font-bold text-xl md:text-2xl mb-1 md:mb-2">Tambahkan ke Jadwal</h3>
-              <p className="text-emerald-400 text-sm md:text-base mb-6 md:mb-8 font-medium">{selectedMeal.nama}</p>
+              <p className="text-emerald-400 text-sm md:text-base mb-6 md:mb-8 font-medium leading-snug">{selectedMeal.nama}</p>
               
               <label className="block text-xs md:text-sm font-bold text-gray-400 uppercase tracking-widest mb-2 md:mb-3">Pilih Hari:</label>
               <select 
@@ -312,6 +308,7 @@ export default function SmartFoodPrepDashboard() {
         )}
       </section>
       
+      {/* CSS Styling untuk Scrollbar dan Animasi */}
       <style dangerouslySetInnerHTML={{__html: `
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 8px; }
         @media (min-width: 768px) {
