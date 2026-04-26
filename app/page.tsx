@@ -34,7 +34,7 @@ export default function Dashboard() {
   return (
     <main className="min-h-screen bg-[#000000] selection:bg-emerald-500/30 selection:text-emerald-200 relative overflow-hidden px-6 py-20 md:py-32 flex flex-col">
       
-      {/* Keyframe Injector (Hanya untuk animasi lokal) */}
+      {/* Keyframe Injector */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes fadeInUp {
           from { opacity: 0; transform: translateY(20px); }
@@ -46,18 +46,8 @@ export default function Dashboard() {
       <div className="absolute top-[-20%] left-[50%] translate-x-[-50%] w-[80%] md:w-[50%] h-[400px] bg-emerald-600/20 rounded-full blur-[120px] pointer-events-none opacity-50"></div>
       
       <div className="max-w-4xl w-full mx-auto relative z-10 flex-1 flex flex-col">
-        <header className="mb-16 text-center animate-[fadeInUp_0.8s_ease-out_both]">
-          <div className="inline-flex items-center justify-center px-4 py-1.5 mb-8 text-[11px] font-bold tracking-[0.2em] text-emerald-400 uppercase bg-emerald-500/10 border border-emerald-500/20 rounded-full backdrop-blur-md">
-            Smart Kitchen AI
-          </div>
-          <h1 className="text-5xl md:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-gray-500 tracking-tighter mb-6 leading-tight">
-            Menu Harian Anda.
-          </h1>
-          <p className="text-gray-400 max-w-lg mx-auto text-base md:text-lg leading-relaxed font-medium">
-            Ketikkan Aset / Inventaris yang tersedia. Biarkan kecerdasan buatan meracik rekomendasinya.
-          </p>
-        </header>
-
+        
+        {/* HEADER TUNGGAL YANG BENAR */}
         <header className="mb-16 text-center animate-[fadeInUp_0.8s_ease-out_both]">
           <div className="inline-flex items-center justify-center px-4 py-1.5 mb-8 text-[11px] font-bold tracking-[0.2em] text-emerald-400 uppercase bg-emerald-500/10 border border-emerald-500/20 rounded-full backdrop-blur-md">
             Smart Kitchen AI
@@ -74,7 +64,7 @@ export default function Dashboard() {
             <Link href="/profile-setup" className="px-6 py-3 rounded-xl bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30 hover:bg-emerald-500/40 transition-colors">
               Setel Profil Medis
             </Link>
-            <Link href="/smart-food-prep" className="px-6 py-3 rounded-xl bg-white text-black font-bold hover:scale-105 transition-transform">
+            <Link href="/smart-food-prep" className="px-6 py-3 rounded-xl bg-white text-black font-bold hover:scale-105 transition-transform shadow-[0_0_40px_rgba(255,255,255,0.3)]">
               Buka Smart Food Prep ✨
             </Link>
           </div>
@@ -110,7 +100,7 @@ export default function Dashboard() {
           </button>
         </form>
 
-        {/* Hasil Rekomendasi (UI Terkunci, Style Diperbarui) */}
+        {/* Hasil Rekomendasi */}
         <div className="flex-1">
           {menus?.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
