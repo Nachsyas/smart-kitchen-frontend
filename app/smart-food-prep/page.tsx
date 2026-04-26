@@ -19,7 +19,7 @@ export default function SmartFoodPrepDashboard() {
   const [selectedDayModal, setSelectedDayModal] = useState('Senin');
   const [activeDay, setActiveDay] = useState('Senin');
 
-  // ================= FUNGSI PENCARIAN & VARIASI MENU =================
+  // ================= FUNGSI PENCARIAN & VARIASI MENU SUPER LENGKAP =================
   const handleSearch = async () => {
     if (!input.trim()) return;
     setLoading(true);
@@ -48,15 +48,27 @@ export default function SmartFoodPrepDashboard() {
         console.error("Gagal menghubungi server AI:", error);
       }
     } else {
-      // LOGIKA BARU: Beli Makanan (Variasi Menu Lebih Kaya & Menggugah Selera)
-      // Huruf kapital di awal kata agar terlihat seperti nama menu di GoFood/GrabFood
+      // LOGIKA BARU: Variasi Menu Beli Makanan yang Sangat Ekstensif!
       const kataKunci = input.trim().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
       
       const variasiKuliner = [
-        `${kataKunci} Bakar Madu (Resto Bintang 4)`,
+        `${kataKunci} Bakar Madu Spesial`,
         `${kataKunci} Goreng Krispi + Nasi Hangat`,
+        `${kataKunci} Geprek Sambal Bawang Level 5`,
+        `${kataKunci} Penyet + Sambal Terasi Mentah`,
+        `Katsu ${kataKunci} Saus Curry Jepang`,
+        `Rice Bowl ${kataKunci} Teriyaki`,
+        `Rendang ${kataKunci} Bumbu Minang Asli`,
+        `${kataKunci} Rica-Rica Pedas Daun Jeruk`,
         `Dimsum ${kataKunci} Saus Mentai`,
         `Sate ${kataKunci} Bumbu Kacang Kental`,
+        `Burger ${kataKunci} Extra Cheese`,
+        `${kataKunci} Woku Belanga Kemangi`,
+        `Nasi Bakar ${kataKunci} Suwir Kemangi`,
+        `Salad Sayur + Dada ${kataKunci} Panggang`,
+        `Bakmi Kesukaan + Topping ${kataKunci} Cincang`,
+        `Steak ${kataKunci} Hotplate Saus Jamur`,
+        `${kataKunci} Betutu Khas Bali`,
         `Sup Tulang ${kataKunci} Kuah Gurih`
       ];
 
@@ -64,8 +76,8 @@ export default function SmartFoodPrepDashboard() {
         const hasilBeli = variasiKuliner.map((namaMenu, index) => ({
           id: Date.now() + index,
           nama: namaMenu,
-          kalori: Math.floor(Math.random() * 250) + 200, // Kalori random 200-450
-          protein: Math.floor(Math.random() * 25) + 10,  // Protein random 10-35g
+          kalori: Math.floor(Math.random() * 400) + 150, // Kalori random 150-550
+          protein: Math.floor(Math.random() * 30) + 10,  // Protein random 10-40g
         }));
         setRecommendations(hasilBeli);
       }, 1500);
@@ -105,7 +117,7 @@ export default function SmartFoodPrepDashboard() {
     setWeeklyPlan(prev => ({ ...prev, [day]: newDayPlan }));
   };
 
-  // ================= KALKULASI GIZI DENGAN BAHASA AWAM =================
+  // ================= KALKULASI GIZI =================
   const currentDayMeals = weeklyPlan[activeDay];
   const totalKalori = currentDayMeals.reduce((sum, meal) => sum + meal.kalori, 0);
   const totalProtein = currentDayMeals.reduce((sum, meal) => sum + meal.protein, 0);
@@ -144,7 +156,7 @@ export default function SmartFoodPrepDashboard() {
           </div>
           
           <textarea 
-            placeholder={activeTab === 'Beli Makanan' ? "Mau beli lauk apa? (Misal: Ayam, Udang, Telur)..." : "Ketik bahan yang kamu punya (Misal: Telur, Bayam)..."}
+            placeholder={activeTab === 'Beli Makanan' ? "Mau beli lauk apa? (Misal: Ayam, Udang, Jamur)..." : "Ketik bahan yang kamu punya (Misal: Telur, Bayam)..."}
             className="w-full h-16 md:h-20 bg-black/40 border border-white/10 rounded-xl p-3 md:p-4 text-sm focus:outline-none focus:border-emerald-500/50 transition-colors resize-none shadow-inner mb-3"
             value={input}
             onChange={(e) => setInput(e.target.value)}
