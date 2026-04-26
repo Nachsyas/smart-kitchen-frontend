@@ -6,7 +6,6 @@ export default function SmartFoodPrepDashboard() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   
-  // State Rekomendasi diubah menjadi dinamis (Awalnya kosong atau default)
   const [recommendations, setRecommendations] = useState<any[]>([
     { id: 1, nama: 'Soto Ayam Kuah Bening', kalori: 320, protein: 25 },
     { id: 2, nama: 'Tumis Tahu Brokoli', kalori: 180, protein: 12 },
@@ -20,13 +19,12 @@ export default function SmartFoodPrepDashboard() {
   const [selectedDayModal, setSelectedDayModal] = useState('Senin');
   const [activeDay, setActiveDay] = useState('Senin');
 
-  // ================= FUNGSI PENCARIAN KE BACKEND AI =================
+  // ================= FUNGSI PENCARIAN & VARIASI MENU =================
   const handleSearch = async () => {
     if (!input.trim()) return;
     setLoading(true);
 
     if (activeTab === 'Masak Sendiri') {
-      // LOGIKA: MASAK SENDIRI -> Tembak ke API Golang V1 (Sistem Rekomendasi)
       const bahanArray = input.split(',').map(b => b.trim()).filter(b => b !== '');
       try {
         const res = await fetch('https://nachsyas-smart-kitchen-assistant-api.hf.space/api/v1/recommendations', {
@@ -37,12 +35,11 @@ export default function SmartFoodPrepDashboard() {
         
         const data = await res.json();
         
-        // Memformat data dari AI agar cocok dengan bentuk Kartu UI kita
         if (data && Array.isArray(data)) {
           const formattedData = data.map((item: any, index: number) => ({
-            id: Date.now() + index, // Buat ID unik
+            id: Date.now() + index,
             nama: item.Menu || item.nama_menu || item.Nama || "Menu AI Spesial",
-            kalori: parseInt(item.Kalori) || Math.floor(Math.random() * 200) + 150, // Fallback jika AI tidak merespons kalori
+            kalori: parseInt(item.Kalori) || Math.floor(Math.random() * 200) + 150,
             protein: parseInt(item.Protein) || Math.floor(Math.random() * 20) + 5,
           }));
           setRecommendations(formattedData);
@@ -51,14 +48,26 @@ export default function SmartFoodPrepDashboard() {
         console.error("Gagal menghubungi server AI:", error);
       }
     } else {
-      // LOGIKA: BELI MAKANAN -> Simulasi Algoritma Pencarian Vendor/Restoran
-      // (Nanti bisa disambungkan ke API Google Places atau API internal lainnya)
+      // LOGIKA BARU: Beli Makanan (Variasi Menu Lebih Kaya & Menggugah Selera)
+      // Huruf kapital di awal kata agar terlihat seperti nama menu di GoFood/GrabFood
+      const kataKunci = input.trim().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      
+      const variasiKuliner = [
+        `${kataKunci} Bakar Madu (Resto Bintang 4)`,
+        `${kataKunci} Goreng Krispi + Nasi Hangat`,
+        `Dimsum ${kataKunci} Saus Mentai`,
+        `Sate ${kataKunci} Bumbu Kacang Kental`,
+        `Sup Tulang ${kataKunci} Kuah Gurih`
+      ];
+
       setTimeout(() => {
-        setRecommendations([
-          { id: Date.now(), nama: `Beli: ${input} Spesial (Gofood)`, kalori: 450, protein: 30 },
-          { id: Date.now()+1, nama: `Catering Sehat: ${input}`, kalori: 300, protein: 25 },
-          { id: Date.now()+2, nama: `Resto Lokal: ${input} Bakar`, kalori: 380, protein: 35 },
-        ]);
+        const hasilBeli = variasiKuliner.map((namaMenu, index) => ({
+          id: Date.now() + index,
+          nama: namaMenu,
+          kalori: Math.floor(Math.random() * 250) + 200, // Kalori random 200-450
+          protein: Math.floor(Math.random() * 25) + 10,  // Protein random 10-35g
+        }));
+        setRecommendations(hasilBeli);
       }, 1500);
     }
     
@@ -96,7 +105,7 @@ export default function SmartFoodPrepDashboard() {
     setWeeklyPlan(prev => ({ ...prev, [day]: newDayPlan }));
   };
 
-  // ================= KALKULASI GIZI =================
+  // ================= KALKULASI GIZI DENGAN BAHASA AWAM =================
   const currentDayMeals = weeklyPlan[activeDay];
   const totalKalori = currentDayMeals.reduce((sum, meal) => sum + meal.kalori, 0);
   const totalProtein = currentDayMeals.reduce((sum, meal) => sum + meal.protein, 0);
@@ -104,17 +113,19 @@ export default function SmartFoodPrepDashboard() {
 
   let rekomendasiTeks = "";
   if (currentDayMeals.length === 0) {
-    rekomendasiTeks = `Belum ada jadwal makan untuk hari ${activeDay}. Silakan cari menu di samping, lalu tarik ke sini.`;
-  } else if (totalKalori < 1200) {
-    rekomendasiTeks = `Asupan ${activeDay} rendah (${totalKalori} kcal). Kami merekomendasikan tambahan menu padat energi.`;
+    rekomendasiTeks = `Jadwal makan hari ${activeDay} masih kosong nih. Yuk, cari makanan favoritmu di samping lalu geser ke sini!`;
+  } else if (totalKalori < 1000) {
+    rekomendasiTeks = `Makanmu di hari ${activeDay} masih kurang banyak (baru ${totalKalori} kalori). Jangan lupa ngemil sehat atau tambah porsi lauk ya, biar nggak lemes pas aktivitas!`;
+  } else if (totalKalori > 2500) {
+    rekomendasiTeks = `Waduh, asupan hari ${activeDay} lumayan tinggi nih (tembus ${totalKalori} kalori). Kurangi makanan manis atau gorengan ya kalau lagi nggak banyak gerak.`;
   } else {
-    rekomendasiTeks = `Komposisi hari ${activeDay} sangat baik! Anda mengamankan ${totalProtein}g protein dan ${totalKalori} kcal.`;
+    rekomendasiTeks = `Mantap! Porsi hari ${activeDay} udah pas banget. Kamu dapat asupan ${totalProtein} gram protein dan ${totalKalori} kalori. Pas buat jaga badan tetap sehat dan fit!`;
   }
 
   return (
     <main className="h-screen w-full bg-[#050505] text-white flex flex-col md:flex-row overflow-hidden font-sans">
       
-      {/* ================= 1. SIDEBAR (DITAMBAH TOMBOL CARI) ================= */}
+      {/* ================= 1. SIDEBAR ================= */}
       <aside className="w-full md:w-[380px] lg:w-[420px] shrink-0 h-[50vh] md:h-screen border-b md:border-b-0 md:border-r border-white/10 bg-white/[0.02] flex flex-col z-20">
         <div className="p-4 md:p-6 border-b border-white/10 shrink-0">
           <div className="flex bg-black/40 rounded-xl p-1 mb-4 border border-white/5">
@@ -133,14 +144,13 @@ export default function SmartFoodPrepDashboard() {
           </div>
           
           <textarea 
-            placeholder={activeTab === 'Beli Makanan' ? "Ketik makanan yang ingin dibeli (Misal: Nasi Padang)..." : "Ketik bahan yang Anda miliki (Misal: Telur, Bayam)..."}
+            placeholder={activeTab === 'Beli Makanan' ? "Mau beli lauk apa? (Misal: Ayam, Udang, Telur)..." : "Ketik bahan yang kamu punya (Misal: Telur, Bayam)..."}
             className="w-full h-16 md:h-20 bg-black/40 border border-white/10 rounded-xl p-3 md:p-4 text-sm focus:outline-none focus:border-emerald-500/50 transition-colors resize-none shadow-inner mb-3"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSearch(); } }}
           />
 
-          {/* TOMBOL AKSI PENCARIAN */}
           <button 
             onClick={handleSearch}
             disabled={loading || !input.trim()}
@@ -152,26 +162,26 @@ export default function SmartFoodPrepDashboard() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                AI Sedang Menganalisis...
+                Meracik Menu...
               </>
             ) : (
-              activeTab === 'Beli Makanan' ? 'Cari Vendor Makanan' : 'Racik Menu dengan AI'
+              activeTab === 'Beli Makanan' ? 'Cari Ide Makanan Beli' : 'Racik Menu dengan AI'
             )}
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-3 md:space-y-4 custom-scrollbar relative">
-          <h3 className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-emerald-500 mb-2 md:mb-4">Rekomendasi Menu AI</h3>
+          <h3 className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-emerald-500 mb-2 md:mb-4">Pilihan Menu Buat Kamu</h3>
           
           {loading && (
              <div className="absolute inset-0 bg-[#050505]/80 backdrop-blur-sm flex flex-col items-center justify-center z-10">
                 <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                <p className="text-emerald-400 font-medium text-xs tracking-widest uppercase animate-pulse">Menghubungkan ke Backend...</p>
+                <p className="text-emerald-400 font-medium text-xs tracking-widest uppercase animate-pulse">Menyiapkan Rekomendasi...</p>
              </div>
           )}
 
           {recommendations.length === 0 && !loading ? (
-             <div className="text-center text-gray-500 text-sm mt-10">Silakan ketikkan pencarian di atas.</div>
+             <div className="text-center text-gray-500 text-sm mt-10">Ketikkan makanan favoritmu di atas ya!</div>
           ) : (
             recommendations.map((meal) => (
               <div 
@@ -180,8 +190,8 @@ export default function SmartFoodPrepDashboard() {
                 onDragStart={(e) => handleDragStart(e, meal)}
                 className="bg-white/5 border border-white/10 p-3 md:p-5 rounded-xl md:rounded-2xl cursor-grab active:cursor-grabbing hover:bg-white/10 hover:border-emerald-500/30 transition-all group relative"
               >
-                <h4 className="font-bold text-sm md:text-base mb-1">{meal.nama}</h4>
-                <p className="text-xs md:text-sm text-gray-400">{meal.kalori} kcal • {meal.protein}g</p>
+                <h4 className="font-bold text-sm md:text-base mb-1 pr-6 leading-snug">{meal.nama}</h4>
+                <p className="text-xs md:text-sm text-gray-400 mt-2">{meal.kalori} kalori • {meal.protein}g protein</p>
                 <button 
                   onClick={() => setSelectedMeal(meal)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 md:w-10 md:h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center md:opacity-0 group-hover:opacity-100 transition-opacity hover:bg-emerald-500 hover:text-black font-bold text-lg md:text-xl"
@@ -217,14 +227,15 @@ export default function SmartFoodPrepDashboard() {
               
               <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-2 md:space-y-3 custom-scrollbar pointer-events-none">
                 {weeklyPlan[day].length === 0 ? (
-                  <div className="h-full flex items-center justify-center text-center p-4 border-2 border-dashed border-white/10 rounded-xl md:rounded-2xl text-gray-500 text-xs md:text-sm">
+                  <div className="h-full flex flex-col items-center justify-center text-center p-4 border-2 border-dashed border-white/10 rounded-xl md:rounded-2xl text-gray-500 text-xs md:text-sm">
+                    <span className="text-2xl mb-2 opacity-50">🍽️</span>
                     Tarik menu ke sini
                   </div>
                 ) : (
                   weeklyPlan[day].map((meal, index) => (
                     <div key={index} className="bg-emerald-500/10 border border-emerald-500/20 p-3 md:p-4 rounded-lg md:rounded-xl relative group animate-[fadeInUp_0.3s_ease-out] pointer-events-auto">
                       <h4 className="font-semibold text-sm md:text-base text-emerald-300 pr-6 truncate">{meal.nama}</h4>
-                      <p className="text-[10px] md:text-xs text-gray-400 mt-1">{meal.kalori} kcal</p>
+                      <p className="text-[10px] md:text-xs text-gray-400 mt-1">{meal.kalori} kalori</p>
                       <button 
                         onClick={(e) => { e.stopPropagation(); removeMeal(day, index); }}
                         className="absolute right-2 top-2 text-red-400 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-300 font-bold text-sm"
@@ -268,10 +279,10 @@ export default function SmartFoodPrepDashboard() {
         {selectedMeal && (
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 pointer-events-auto">
             <div className="bg-[#111] border border-white/10 p-6 md:p-8 rounded-2xl md:rounded-3xl w-full max-w-md shadow-2xl animate-[fadeInUp_0.2s_ease-out]">
-              <h3 className="font-bold text-xl md:text-2xl mb-1 md:mb-2">Tambahkan Jadwal</h3>
+              <h3 className="font-bold text-xl md:text-2xl mb-1 md:mb-2">Tambahkan ke Jadwal</h3>
               <p className="text-emerald-400 text-sm md:text-base mb-6 md:mb-8 font-medium">{selectedMeal.nama}</p>
               
-              <label className="block text-xs md:text-sm font-bold text-gray-400 uppercase tracking-widest mb-2 md:mb-3">Pilih Hari</label>
+              <label className="block text-xs md:text-sm font-bold text-gray-400 uppercase tracking-widest mb-2 md:mb-3">Pilih Hari:</label>
               <select 
                 value={selectedDayModal}
                 onChange={(e) => setSelectedDayModal(e.target.value)}
