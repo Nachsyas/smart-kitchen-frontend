@@ -31,7 +31,6 @@ export default function SmartFoodPrepDashboard() {
   useEffect(() => {
     setCurrentDayIndex(new Date().getDay());
 
-    // Cek Peringatan Makan setiap menit
     const checkMealTime = () => {
       const hour = new Date().getHours();
       if (hour === 7) setMealReminder("☕ Waktunya Sarapan! Jangan lewatkan asupan energi pertamamu.");
@@ -72,7 +71,7 @@ export default function SmartFoodPrepDashboard() {
       let newData: any[] = [];
       let moreAvailable = false;
 
-      // 1. Coba ambil dari Database (Paginasi per 10 resep)
+      // 1. Ambil dari DB Relasional
       const res = await fetch(`https://nachsyas-smart-kitchen-assistant-api.hf.space/api/v1/recipes?keyword=${encodeURIComponent(cacheKey)}&page=${pageNum}&limit=10`);
       
       if (res.ok) {
@@ -81,13 +80,13 @@ export default function SmartFoodPrepDashboard() {
         moreAvailable = responseData.has_more || false;
       }
 
-      // 2. SMART FALLBACK: Jika pencarian baru dan DB kosong, panggil AI
+      // 2. Fallback AI jika data DB kosong (pencarian baru)
       if (isNewSearch && newData.length === 0) {
         const promptKeyword = activeTab === 'Beli Makanan' 
           ? `Rekomendasi MAKANAN JADI untuk: ${input}` 
           : `Rekomendasi MASAK SENDIRI dengan BAHAN MENTAH: ${input}`;
         
-        const postRes = await fetch('[https://nachsyas-smart-kitchen-assistant-api.hf.space/api/v1/recommendations](https://nachsyas-smart-kitchen-assistant-api.hf.space/api/v1/recommendations)', {
+        const postRes = await fetch('https://nachsyas-smart-kitchen-assistant-api.hf.space/api/v1/recommendations', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ aset_inventaris: [promptKeyword] }) 
@@ -100,7 +99,6 @@ export default function SmartFoodPrepDashboard() {
         }
       }
 
-      // Standarisasi properti objek
       const formattedData = newData.map((item: any, index: number) => ({
           id: item.id || Date.now() + Math.random(),
           nama: item.nama || item.Nama || "Menu AI",
@@ -138,7 +136,6 @@ export default function SmartFoodPrepDashboard() {
     fetchRecipes(1, true);
   };
 
-  // ================= SENSOR INFINITE SCROLL =================
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
     if (scrollHeight - scrollTop <= clientHeight * 1.5) {
@@ -188,7 +185,7 @@ export default function SmartFoodPrepDashboard() {
     
     if (!isCurrentlyLocked) {
       try {
-        const res = await fetch('[https://nachsyas-smart-kitchen-assistant-api.hf.space/api/v1/plan/save](https://nachsyas-smart-kitchen-assistant-api.hf.space/api/v1/plan/save)', {
+        const res = await fetch('https://nachsyas-smart-kitchen-assistant-api.hf.space/api/v1/plan/save', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ hari: day, menu_data: weeklyPlan[day] }) 
@@ -212,6 +209,7 @@ export default function SmartFoodPrepDashboard() {
     alert("📄 Mempersiapkan Laporan Bulanan AI Anda... (Akan diunduh dalam bentuk PDF)");
   };
 
+  // ================= KALKULASI GIZI =================
   const currentMeals = weeklyPlan[activeDay];
   const totalKalori = currentMeals.reduce((s, m) => s + m.kalori, 0);
   const totalProtein = currentMeals.reduce((s, m) => s + m.protein, 0);
@@ -237,7 +235,7 @@ export default function SmartFoodPrepDashboard() {
         </div>
       )}
 
-      <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23f59e0b\' fill-opacity=\'1\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }}></div>
+      <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23f59e0b\' fill-opacity=\'1\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }}></div>
 
       <aside className={`w-full md:w-[380px] lg:w-[420px] shrink-0 h-[50vh] md:h-screen bg-white/90 backdrop-blur-xl border-r border-emerald-100 flex flex-col z-20 shadow-2xl ${mealReminder ? 'pt-10' : ''}`}>
         <div className="p-4 md:p-6 border-b border-emerald-50 shrink-0">
@@ -309,7 +307,6 @@ export default function SmartFoodPrepDashboard() {
             </div>
           )}
 
-          {/* LOADING INDIKATOR INFINITE SCROLL */}
           {isFetchingMore && (
             <div className="text-center py-4 text-emerald-500 font-bold text-xs animate-pulse">
               Memuat menu lainnya...
@@ -330,7 +327,8 @@ export default function SmartFoodPrepDashboard() {
           <p className="text-slate-500 font-medium text-sm">Tarik (drag) kartu rekomendasi dari kiri dan lepaskan ke hari yang kamu inginkan.</p>
         </div>
 
-        <div className="flex-1 overflow-x-auto overflow-y-hidden flex gap-6 pb-4 custom-scrollbar">
+        {/* PERBAIKAN 1: PADDING CONTAINER KARTU AGAR TIDAK KEPOTONG SAAT ANIMASI RING (-translate-y-2) */}
+        <div className="flex-1 overflow-x-auto overflow-y-hidden flex gap-6 pt-4 pb-6 px-1 custom-scrollbar">
           {Object.keys(weeklyPlan).map((day) => {
             const timeLocked = isTimeLocked(day);
             const manualLocked = lockedDays[day];
@@ -373,9 +371,11 @@ export default function SmartFoodPrepDashboard() {
           })}
         </div>
 
-        <div className="shrink-0 bg-white/95 backdrop-blur-xl p-8 rounded-[2rem] shadow-xl border border-slate-100 mt-6 relative overflow-hidden">
-           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500 opacity-5 blur-3xl rounded-full"></div>
-           <div className="flex-1 relative z-10">
+        {/* PERBAIKAN 2: MENGEMBALIKAN DIAGRAM PIE RASIO MAKRO */}
+        <div className="shrink-0 bg-white/95 backdrop-blur-xl p-8 rounded-[2rem] shadow-xl border border-slate-100 mt-6 relative overflow-hidden flex flex-col md:flex-row gap-8 items-center">
+           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500 opacity-5 blur-3xl rounded-full pointer-events-none"></div>
+           
+           <div className="flex-1 w-full relative z-10">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h3 className="text-2xl font-extrabold flex items-center gap-2 text-slate-800">
@@ -407,6 +407,16 @@ export default function SmartFoodPrepDashboard() {
                   <p className="text-2xl font-black text-rose-700">{totalLemak} <span className="text-xs font-medium">g</span></p>
                 </div>
               </div>
+           </div>
+
+           <div className="flex flex-col items-center justify-center gap-3 relative z-10 shrink-0">
+             <div className="w-[140px] h-[140px] rounded-full flex items-center justify-center relative shadow-[0_10px_30px_rgba(0,0,0,0.08)] bg-white"
+               style={{ background: `conic-gradient(#3b82f6 ${pVisual}%, #f97316 ${pVisual}% ${pVisual + kVisual}%, #e11d48 ${pVisual + kVisual}% 100%)`, padding: '10px' }}>
+                <div className="bg-white w-full h-full rounded-full flex flex-col items-center justify-center shadow-inner">
+                   <span className="text-[10px] uppercase tracking-widest font-extrabold text-slate-400">Rasio</span>
+                   <span className="text-[10px] uppercase tracking-widest font-extrabold text-slate-400">Makro</span>
+                </div>
+             </div>
            </div>
         </div>
 
