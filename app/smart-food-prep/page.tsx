@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react'; // Tambahkan useRef di sini
 
 export default function SmartFoodPrepDashboard() {
   const [activeTab, setActiveTab] = useState('Beli Makanan');
@@ -21,11 +21,27 @@ export default function SmartFoodPrepDashboard() {
   const [hasMore, setHasMore] = useState(true);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
 
+  // ================= STATE BARU: COUNTDOWN & AUTO-RETRY AI LIMIT =================
+  const [countdown, setCountdown] = useState(0);
+  const pendingKeywordRef = useRef(""); // Menyimpan keyword saat AI limit
+
   // State untuk Peringatan Waktu Makan
   const [mealReminder, setMealReminder] = useState<string | null>(null);
 
   const dayIndices: Record<string, number> = { Senin: 1, Selasa: 2, Rabu: 3, Kamis: 4, Jumat: 5, Sabtu: 6, Minggu: 0 };
   const [currentDayIndex, setCurrentDayIndex] = useState(1);
+
+  // ================= LOGIKA COUNTDOWN & AUTO RETRY =================
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (countdown > 0) {
+      timer = setInterval(() => setCountdown((prev) => prev - 1), 1000);
+    } else if (countdown === 0 && pendingKeywordRef.current !== "") {
+      pendingKeywordRef.current = ""; // Reset memori
+      fetchRecipes(1, true); // Eksekusi ulang pencarian otomatis!
+    }
+    return () => clearInterval(timer);
+  }, [countdown]);
 
   // ================= LOGIKA WAKTU & PERINGATAN MAKAN =================
   useEffect(() => {
@@ -96,6 +112,14 @@ export default function SmartFoodPrepDashboard() {
           const rawData = await postRes.json();
           newData = Array.isArray(rawData) ? rawData : (rawData.data || []);
           moreAvailable = false; 
+
+          // 🛑 DETEKSI LIMIT AI DI SINI
+          if (newData.length > 0 && newData[0].nama.includes("Tunggu Sebentar")) {
+            pendingKeywordRef.current = input; // Simpan input ke memori
+            setCountdown(15); // Nyalakan timer 15 detik
+            setLoading(false);
+            return; // Hentikan fungsi agar tidak merender peringatan ke layar
+          }
         }
       }
 
@@ -139,7 +163,7 @@ export default function SmartFoodPrepDashboard() {
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
     if (scrollHeight - scrollTop <= clientHeight * 1.5) {
-      if (!isFetchingMore && hasMore && !loading) {
+      if (!isFetchingMore && hasMore && !loading && countdown === 0) {
         const nextPage = page + 1;
         setPage(nextPage);
         fetchRecipes(nextPage, false);
@@ -257,10 +281,26 @@ export default function SmartFoodPrepDashboard() {
             placeholder={activeTab === 'Beli Makanan' ? "Cari lauk favoritmu (Misal: Ayam Bakar)..." : "Ketik bahan yang kamu miliki (Misal: Tempe, Santan, Cabai)..."}
             className="w-full h-20 bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-700 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 resize-none mb-3 transition-all placeholder:text-slate-400"
             value={input} onChange={(e) => setInput(e.target.value)}
+            disabled={loading || countdown > 0}
             onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSearch(); } }}
           />
-          <button onClick={handleSearch} disabled={loading || !input.trim()} className="w-full py-3 bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 disabled:opacity-50 text-white font-extrabold rounded-xl flex items-center justify-center gap-2 text-sm shadow-[0_4px_15px_rgba(16,185,129,0.3)] transition-all">
-            {loading ? 'AI Sedang Meracik...' : 'Cari Rekomendasi Menu'}
+          
+          {/* TOMBOL SMART AUTO-RETRY */}
+          <button 
+            onClick={handleSearch} 
+            disabled={loading || !input.trim() || countdown > 0} 
+            className={`w-full py-3 font-extrabold rounded-xl flex items-center justify-center gap-2 text-sm transition-all shadow-md ${
+              countdown > 0 
+                ? 'bg-slate-300 text-slate-500 cursor-not-allowed' 
+                : 'bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-white shadow-[0_4px_15px_rgba(16,185,129,0.3)]'
+            }`}
+          >
+            {loading && countdown === 0 
+              ? 'AI Sedang Meracik...' 
+              : countdown > 0 
+                ? `⏳ AI Sibuk. Coba otomatis dlm ${countdown}s` 
+                : 'Cari Rekomendasi Menu'
+            }
           </button>
         </div>
 
@@ -270,13 +310,13 @@ export default function SmartFoodPrepDashboard() {
             Daftar Pilihan Menu
           </h3>
           
-          {loading ? (
+          {loading && countdown === 0 ? (
              <div className="flex-1 flex flex-col items-center justify-center pb-10">
                 <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4 shadow-md"></div>
              </div>
           ) : recommendations.length === 0 ? (
              <div className="flex-1 flex items-center justify-center pb-10 text-center text-slate-400 text-sm font-medium">
-               Ayo ketikkan makanan di atas!
+               {countdown > 0 ? "Menunggu server Google rileks sebentar..." : "Ayo ketikkan makanan di atas!"}
              </div>
           ) : (
             <div className="space-y-3 pb-4">
@@ -327,7 +367,6 @@ export default function SmartFoodPrepDashboard() {
           <p className="text-slate-500 font-medium text-sm">Tarik (drag) kartu rekomendasi dari kiri dan lepaskan ke hari yang kamu inginkan.</p>
         </div>
 
-        {/* PERBAIKAN 1: PADDING CONTAINER KARTU AGAR TIDAK KEPOTONG SAAT ANIMASI RING (-translate-y-2) */}
         <div className="flex-1 overflow-x-auto overflow-y-hidden flex gap-6 pt-4 pb-6 px-1 custom-scrollbar">
           {Object.keys(weeklyPlan).map((day) => {
             const timeLocked = isTimeLocked(day);
@@ -371,7 +410,6 @@ export default function SmartFoodPrepDashboard() {
           })}
         </div>
 
-        {/* PERBAIKAN 2: MENGEMBALIKAN DIAGRAM PIE RASIO MAKRO */}
         <div className="shrink-0 bg-white/95 backdrop-blur-xl p-8 rounded-[2rem] shadow-xl border border-slate-100 mt-6 relative overflow-hidden flex flex-col md:flex-row gap-8 items-center">
            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500 opacity-5 blur-3xl rounded-full pointer-events-none"></div>
            
