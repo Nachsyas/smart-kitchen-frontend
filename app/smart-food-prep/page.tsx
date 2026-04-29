@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react'; // Tambahkan useRef di sini
+import { useEffect, useRef, useState } from 'react';
 
 export default function SmartFoodPrepDashboard() {
   const [activeTab, setActiveTab] = useState('Beli Makanan');
@@ -16,34 +16,29 @@ export default function SmartFoodPrepDashboard() {
   const [selectedDayModal, setSelectedDayModal] = useState('Senin');
   const [activeDay, setActiveDay] = useState('Senin');
   
-  // ================= STATE ENTERPRISE: PAGINASI & INFINITE SCROLL =================
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
 
-  // ================= STATE BARU: COUNTDOWN & AUTO-RETRY AI LIMIT =================
   const [countdown, setCountdown] = useState(0);
-  const pendingKeywordRef = useRef(""); // Menyimpan keyword saat AI limit
+  const pendingKeywordRef = useRef(""); 
 
-  // State untuk Peringatan Waktu Makan
   const [mealReminder, setMealReminder] = useState<string | null>(null);
 
   const dayIndices: Record<string, number> = { Senin: 1, Selasa: 2, Rabu: 3, Kamis: 4, Jumat: 5, Sabtu: 6, Minggu: 0 };
   const [currentDayIndex, setCurrentDayIndex] = useState(1);
 
-  // ================= LOGIKA COUNTDOWN & AUTO RETRY =================
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (countdown > 0) {
       timer = setInterval(() => setCountdown((prev) => prev - 1), 1000);
     } else if (countdown === 0 && pendingKeywordRef.current !== "") {
-      pendingKeywordRef.current = ""; // Reset memori
-      fetchRecipes(1, true); // Eksekusi ulang pencarian otomatis!
+      pendingKeywordRef.current = ""; 
+      fetchRecipes(1, true); 
     }
     return () => clearInterval(timer);
   }, [countdown]);
 
-  // ================= LOGIKA WAKTU & PERINGATAN MAKAN =================
   useEffect(() => {
     setCurrentDayIndex(new Date().getDay());
 
@@ -69,7 +64,6 @@ export default function SmartFoodPrepDashboard() {
 
   const isDayLocked = (day: string) => lockedDays[day] || isTimeLocked(day);
 
-  // ================= FUNGSI PENCARIAN & PAGINASI =================
   const fetchRecipes = async (pageNum: number, isNewSearch: boolean = false) => {
     if (!input.trim()) return;
 
@@ -87,7 +81,7 @@ export default function SmartFoodPrepDashboard() {
       let newData: any[] = [];
       let moreAvailable = false;
 
-      // 1. Ambil dari DB Relasional
+      // KEMBALIKAN LIMIT KE 10 KARENA BEBAN AI SUDAH RINGAN
       const res = await fetch(`https://nachsyas-smart-kitchen-assistant-api.hf.space/api/v1/recipes?keyword=${encodeURIComponent(cacheKey)}&page=${pageNum}&limit=10`);
       
       if (res.ok) {
@@ -96,7 +90,6 @@ export default function SmartFoodPrepDashboard() {
         moreAvailable = responseData.has_more || false;
       }
 
-      // 2. Fallback AI jika data DB kosong (pencarian baru)
       if (isNewSearch && newData.length === 0) {
         const promptKeyword = activeTab === 'Beli Makanan' 
           ? `Rekomendasi MAKANAN JADI untuk: ${input}` 
@@ -113,12 +106,11 @@ export default function SmartFoodPrepDashboard() {
           newData = Array.isArray(rawData) ? rawData : (rawData.data || []);
           moreAvailable = false; 
 
-          // 🛑 DETEKSI LIMIT AI DI SINI
           if (newData.length > 0 && newData[0].nama.includes("Tunggu Sebentar")) {
-            pendingKeywordRef.current = input; // Simpan input ke memori
-            setCountdown(15); // Nyalakan timer 15 detik
+            pendingKeywordRef.current = input; 
+            setCountdown(15); 
             setLoading(false);
-            return; // Hentikan fungsi agar tidak merender peringatan ke layar
+            return; 
           }
         }
       }
@@ -171,7 +163,6 @@ export default function SmartFoodPrepDashboard() {
     }
   };
 
-  // ================= LOGIKA DRAG & DROP =================
   const handleDragStart = (e: React.DragEvent, meal: any) => {
     e.dataTransfer.setData('meal', JSON.stringify(meal));
   };
@@ -201,7 +192,6 @@ export default function SmartFoodPrepDashboard() {
     });
   };
 
-  // ================= INTEGRASI API SAVE PLAN =================
   const toggleSaveDay = async (day: string) => {
     if (isTimeLocked(day)) return alert(`Hari ${day} sudah terkunci secara sistem.`);
     
@@ -233,13 +223,11 @@ export default function SmartFoodPrepDashboard() {
     alert("📄 Mempersiapkan Laporan Bulanan AI Anda... (Akan diunduh dalam bentuk PDF)");
   };
 
-  // ================= KALKULASI GIZI =================
   const currentMeals = weeklyPlan[activeDay];
   const totalKalori = currentMeals.reduce((s, m) => s + m.kalori, 0);
   const totalProtein = currentMeals.reduce((s, m) => s + m.protein, 0);
   const totalKarbo = currentMeals.reduce((s, m) => s + m.karbo, 0);
   const totalLemak = currentMeals.reduce((s, m) => s + m.lemak, 0);
-  const totalZatBesi = currentMeals.reduce((s, m) => s + m.zatBesi, 0);
   
   const pPct = Math.min(100, Math.round((totalProtein / 50) * 100)); 
   const kPct = Math.min(100, Math.round((totalKarbo / 250) * 100)); 
@@ -285,7 +273,6 @@ export default function SmartFoodPrepDashboard() {
             onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSearch(); } }}
           />
           
-          {/* TOMBOL SMART AUTO-RETRY */}
           <button 
             onClick={handleSearch} 
             disabled={loading || !input.trim() || countdown > 0} 
@@ -339,7 +326,7 @@ export default function SmartFoodPrepDashboard() {
                     <span className="text-emerald-600 font-bold">{meal.kalori} kcal</span> • P: {meal.protein}g • K: {meal.karbo}g
                   </p>
                   <button onClick={() => setRecipeModal(meal)} className="mt-3 text-[10px] uppercase font-bold text-emerald-500 hover:text-emerald-400 flex items-center gap-1">
-                    📖 Lihat Resep & Nutrisi
+                    📖 Lihat Detail & Gizi
                   </button>
                   <button onClick={() => setSelectedMeal(meal)} className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-emerald-500 hover:text-white font-bold shadow-sm transition-all transform hover:scale-110">+</button>
                 </div>
@@ -471,6 +458,15 @@ export default function SmartFoodPrepDashboard() {
                 <button onClick={() => setRecipeModal(null)} className="w-8 h-8 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-400 hover:text-rose-500 hover:border-rose-200 transition-colors font-bold">✕</button>
               </div>
               <div className="p-6 overflow-y-auto custom-scrollbar">
+                
+                {recipeModal.statusBahan !== "-" && (
+                    <div className="mb-4">
+                      <span className={`inline-block px-3 py-1.5 rounded-lg text-xs font-bold ${recipeModal.statusBahan.includes('Lengkap') ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                        Cek Bahan: {recipeModal.statusBahan}
+                      </span>
+                    </div>
+                )}
+
                 <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl mb-6 flex gap-4">
                   <div className="flex-1">
                     <p className="text-[10px] font-bold text-blue-500 uppercase">Zat Besi</p>
@@ -482,14 +478,25 @@ export default function SmartFoodPrepDashboard() {
                     <p className="text-sm font-black text-slate-700">{recipeModal.vitamin || '-'}</p>
                   </div>
                 </div>
-                <h3 className="font-extrabold text-sm text-slate-800 mb-3 uppercase tracking-wider">Instruksi & Keterangan:</h3>
+                <h3 className="font-extrabold text-sm text-slate-800 mb-3 uppercase tracking-wider">Preview Menu:</h3>
                 <div className="prose prose-sm prose-slate max-w-none whitespace-pre-wrap font-medium text-slate-600 leading-relaxed bg-orange-50/50 p-5 rounded-2xl border border-orange-100">
                   {recipeModal.resep}
                 </div>
               </div>
-              <div className="p-4 border-t border-slate-100 bg-slate-50 shrink-0">
-                <button onClick={() => setRecipeModal(null)} className="w-full py-3 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-700 transition-colors shadow-md">Tutup</button>
+
+              {/* ACTION FOOTER DENGAN TOMBOL PENCARIAN EXTERNAL */}
+              <div className="p-4 border-t border-slate-100 bg-slate-50 shrink-0 flex gap-3">
+                <a 
+                  href={`https://www.google.com/search?q=resep+${encodeURIComponent(recipeModal.nama)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 py-3 bg-gradient-to-r from-orange-500 to-orange-400 text-white font-extrabold rounded-xl hover:from-orange-400 hover:to-orange-300 transition-all shadow-md flex items-center justify-center gap-2 text-sm"
+                >
+                  🌐 Buka Resep di Web
+                </a>
+                <button onClick={() => setRecipeModal(null)} className="px-6 py-3 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-700 transition-colors shadow-md text-sm">Tutup</button>
               </div>
+
             </div>
           </div>
         )}
