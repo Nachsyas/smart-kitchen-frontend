@@ -81,7 +81,7 @@ export default function SmartFoodPrepDashboard() {
       let newData: any[] = [];
       let moreAvailable = false;
 
-      // KEMBALIKAN LIMIT KE 10 KARENA BEBAN AI SUDAH RINGAN
+      // Ambil data limit 10
       const res = await fetch(`https://nachsyas-smart-kitchen-assistant-api.hf.space/api/v1/recipes?keyword=${encodeURIComponent(cacheKey)}&page=${pageNum}&limit=10`);
       
       if (res.ok) {
@@ -115,6 +115,7 @@ export default function SmartFoodPrepDashboard() {
         }
       }
 
+      // Mapping URL ke Frontend
       const formattedData = newData.map((item: any, index: number) => ({
           id: item.id || Date.now() + Math.random(),
           nama: item.nama || item.Nama || "Menu AI",
@@ -127,6 +128,7 @@ export default function SmartFoodPrepDashboard() {
           zatBesi: parseInt(item.zat_besi || item.Zat_besi || item.zatBesi) || 0,
           vitamin: item.vitamin || item.Vitamin || "-",
           resep: item.resep || item.Resep || "Resep tidak disediakan AI.",
+          url: item.url || item.URL || item.Url || "", // MENGAMBIL URL DARI BACKEND
       }));
 
       if (isNewSearch) {
@@ -484,15 +486,15 @@ export default function SmartFoodPrepDashboard() {
                 </div>
               </div>
 
-              {/* ACTION FOOTER DENGAN TOMBOL PENCARIAN EXTERNAL */}
+              {/* ACTION FOOTER DENGAN TOMBOL PENCARIAN EXTERNAL COOKPAD */}
               <div className="p-4 border-t border-slate-100 bg-slate-50 shrink-0 flex gap-3">
                 <a 
-                  href={`https://www.google.com/search?q=resep+${encodeURIComponent(recipeModal.nama)}`}
+                  href={recipeModal.url ? recipeModal.url : `https://cookpad.com/id/cari/${encodeURIComponent(recipeModal.nama)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex-1 py-3 bg-gradient-to-r from-orange-500 to-orange-400 text-white font-extrabold rounded-xl hover:from-orange-400 hover:to-orange-300 transition-all shadow-md flex items-center justify-center gap-2 text-sm"
                 >
-                  🌐 Buka Resep di Web
+                  🍳 Buka Cara Masak Lengkap
                 </a>
                 <button onClick={() => setRecipeModal(null)} className="px-6 py-3 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-700 transition-colors shadow-md text-sm">Tutup</button>
               </div>
