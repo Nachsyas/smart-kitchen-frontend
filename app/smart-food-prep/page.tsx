@@ -81,7 +81,6 @@ export default function SmartFoodPrepDashboard() {
       let newData: any[] = [];
       let moreAvailable = false;
 
-      // Ambil data limit 10
       const res = await fetch(`https://nachsyas-smart-kitchen-assistant-api.hf.space/api/v1/recipes?keyword=${encodeURIComponent(cacheKey)}&page=${pageNum}&limit=10`);
       
       if (res.ok) {
@@ -115,7 +114,6 @@ export default function SmartFoodPrepDashboard() {
         }
       }
 
-      // Mapping URL ke Frontend
       const formattedData = newData.map((item: any, index: number) => ({
           id: item.id || Date.now() + Math.random(),
           nama: item.nama || item.Nama || "Menu AI",
@@ -128,7 +126,7 @@ export default function SmartFoodPrepDashboard() {
           zatBesi: parseInt(item.zat_besi || item.Zat_besi || item.zatBesi) || 0,
           vitamin: item.vitamin || item.Vitamin || "-",
           resep: item.resep || item.Resep || "Resep tidak disediakan AI.",
-          url: item.url || item.URL || item.Url || "", // MENGAMBIL URL DARI BACKEND
+          url: item.url || item.URL || item.Url || "",
       }));
 
       if (isNewSearch) {
@@ -312,17 +310,18 @@ export default function SmartFoodPrepDashboard() {
               {recommendations.map((meal, index) => (
                 <div key={`${meal.id}-${index}`} draggable onDragStart={(e) => handleDragStart(e, meal)} className="bg-white border border-slate-100 shadow-sm p-4 rounded-2xl relative group hover:border-emerald-300 hover:shadow-md transition-all cursor-grab active:cursor-grabbing">
                   
+                  {/* 👇 FRONTEND FIX: Tambah inline-block, max-w-full, break-words, whitespace-normal 👇 */}
                   {meal.statusBahan !== "-" && (
                     <div className="mb-2">
-                      <span className={`text-[10px] font-bold px-2 py-1 rounded-md ${meal.statusBahan.includes('Lengkap') ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                      <span className={`text-[10px] font-bold px-2 py-1.5 rounded-md inline-block max-w-full break-words whitespace-normal leading-tight ${meal.statusBahan.includes('Lengkap') || meal.statusBahan.includes('100%') ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
                         {meal.statusBahan}
                       </span>
                     </div>
                   )}
 
-                  <div className="flex justify-between items-start pr-12">
+                  <div className="flex justify-between items-start pr-12 mt-1">
                      <h4 className="font-bold text-sm leading-snug text-slate-800">{meal.nama}</h4>
-                     <span className={`text-[9px] uppercase px-2 py-1 rounded-full font-extrabold tracking-wider ${meal.kategori === 'Minuman' ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'}`}>{meal.kategori}</span>
+                     <span className={`text-[9px] uppercase px-2 py-1 rounded-full font-extrabold tracking-wider shrink-0 ${meal.kategori === 'Minuman' ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'}`}>{meal.kategori}</span>
                   </div>
                   <p className="text-[11px] text-slate-500 mt-2 font-medium">
                     <span className="text-emerald-600 font-bold">{meal.kalori} kcal</span> • P: {meal.protein}g • K: {meal.karbo}g
@@ -461,9 +460,10 @@ export default function SmartFoodPrepDashboard() {
               </div>
               <div className="p-6 overflow-y-auto custom-scrollbar">
                 
+                {/* 👇 MODAL FIX: Jaring pengaman UI untuk Modal 👇 */}
                 {recipeModal.statusBahan !== "-" && (
                     <div className="mb-4">
-                      <span className={`inline-block px-3 py-1.5 rounded-lg text-xs font-bold ${recipeModal.statusBahan.includes('Lengkap') ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                      <span className={`inline-block px-3 py-2 rounded-lg text-xs font-bold max-w-full break-words whitespace-normal leading-relaxed ${recipeModal.statusBahan.includes('Lengkap') || recipeModal.statusBahan.includes('100%') ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
                         Cek Bahan: {recipeModal.statusBahan}
                       </span>
                     </div>
@@ -486,7 +486,6 @@ export default function SmartFoodPrepDashboard() {
                 </div>
               </div>
 
-              {/* ACTION FOOTER DENGAN TOMBOL PENCARIAN EXTERNAL COOKPAD */}
               <div className="p-4 border-t border-slate-100 bg-slate-50 shrink-0 flex gap-3">
                 <a 
                   href={recipeModal.url ? recipeModal.url : `https://cookpad.com/id/cari/${encodeURIComponent(recipeModal.nama)}`}
@@ -503,7 +502,6 @@ export default function SmartFoodPrepDashboard() {
           </div>
         )}
 
-        {/* MODAL PEMILIHAN HARI UNTUK TOMBOL PLUS (+) */}
         {selectedMeal && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setSelectedMeal(null)}></div>
