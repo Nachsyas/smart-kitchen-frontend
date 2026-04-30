@@ -25,8 +25,26 @@ export default function SmartFoodPrepDashboard() {
 
   const [mealReminder, setMealReminder] = useState<string | null>(null);
 
+  // 👇 STATE PROFIL MEDIS 👇
+  const [profile, setProfile] = useState<{name: string, birthYear: string, conditions: string}>({ name: '', birthYear: '', conditions: '' });
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+
   const dayIndices: Record<string, number> = { Senin: 1, Selasa: 2, Rabu: 3, Kamis: 4, Jumat: 5, Sabtu: 6, Minggu: 0 };
   const [currentDayIndex, setCurrentDayIndex] = useState(1);
+
+  // AMBIL PROFIL DARI LOCAL STORAGE
+  useEffect(() => {
+    const savedProfile = localStorage.getItem('smartFoodHealthProfile');
+    if (savedProfile) {
+      setProfile(JSON.parse(savedProfile));
+    }
+  }, []);
+
+  const saveProfile = () => {
+    localStorage.setItem('smartFoodHealthProfile', JSON.stringify(profile));
+    setIsProfileModalOpen(false);
+    alert("✅ Data Kesehatan Berhasil Disimpan! AI sekarang akan menyesuaikan resep untuk Anda.");
+  };
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -75,7 +93,17 @@ export default function SmartFoodPrepDashboard() {
     }
 
     const mode = activeTab === 'Beli Makanan' ? 'beli' : 'masak';
-    const cacheKey = `${mode}:${input.trim().toLowerCase()}`;
+    
+    // 👇 LOGIKA PENYELUNDUPAN DATA MEDIS KE BACKEND 👇
+    const currentYear = new Date().getFullYear();
+    const ageStr = profile.birthYear ? (currentYear - parseInt(profile.birthYear)).toString() : "Umum";
+    const condStr = profile.conditions ? profile.conditions : "Tidak ada";
+    
+    const healthContext = (profile.birthYear || profile.conditions) ? ` | umur: ${ageStr} | penyakit: ${condStr}` : "";
+    const baseKeyword = input.trim();
+    const fullKeywordForAI = `${baseKeyword}${healthContext}`;
+    
+    const cacheKey = `${mode}:${fullKeywordForAI.toLowerCase()}`;
 
     try {
       let newData: any[] = [];
@@ -91,8 +119,8 @@ export default function SmartFoodPrepDashboard() {
 
       if (isNewSearch && newData.length === 0) {
         const promptKeyword = activeTab === 'Beli Makanan' 
-          ? `Rekomendasi MAKANAN JADI untuk: ${input}` 
-          : `Rekomendasi MASAK SENDIRI dengan BAHAN MENTAH: ${input}`;
+          ? `Rekomendasi MAKANAN JADI untuk: ${fullKeywordForAI}` 
+          : `Rekomendasi MASAK SENDIRI dengan BAHAN MENTAH: ${fullKeywordForAI}`;
         
         const postRes = await fetch('https://nachsyas-smart-kitchen-assistant-api.hf.space/api/v1/recommendations', {
           method: 'POST',
@@ -251,14 +279,24 @@ export default function SmartFoodPrepDashboard() {
 
       <aside className={`w-full md:w-[380px] lg:w-[420px] shrink-0 h-[50vh] md:h-screen bg-white/90 backdrop-blur-xl border-r border-emerald-100 flex flex-col z-20 shadow-2xl ${mealReminder ? 'pt-10' : ''}`}>
         <div className="p-4 md:p-6 border-b border-emerald-50 shrink-0">
-          <Link href="/" className="inline-flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-widest text-slate-400 hover:text-emerald-500 transition-colors mb-4">
-            <span className="text-sm">←</span> Kembali ke Beranda
-          </Link>
+          
+          <div className="flex justify-between items-center mb-4">
+            <Link href="/" className="inline-flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-widest text-slate-400 hover:text-emerald-500 transition-colors">
+              <span className="text-sm">←</span> Ganti Akun
+            </Link>
+            
+            {/* TOMBOL BUKA PROFIL */}
+            <button onClick={() => setIsProfileModalOpen(true)} className="flex items-center gap-2 bg-rose-50 text-rose-600 px-3 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest hover:bg-rose-100 transition-colors border border-rose-100 shadow-sm">
+              🏥 Profil Medis
+            </button>
+          </div>
+
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600 text-xl shadow-sm">🥑</div>
             <div>
-              <h1 className="font-extrabold text-xl text-slate-800 tracking-tight">SmartFood Prep</h1>
-              <p className="text-[10px] uppercase tracking-widest text-emerald-500 font-bold">AI Nutrition Assistant</p>
+              {/* SAPAAN DINAMIS NAMA USER */}
+              <h1 className="font-extrabold text-xl text-slate-800 tracking-tight">Halo, {profile.name || 'Sobat'}! 👋</h1>
+              <p className="text-[10px] uppercase tracking-widest text-emerald-500 font-bold">AI Clinical Nutritionist</p>
             </div>
           </div>
           <div className="flex bg-slate-100 rounded-xl p-1 mb-4 shadow-inner border border-slate-200/50">
@@ -283,9 +321,9 @@ export default function SmartFoodPrepDashboard() {
             }`}
           >
             {loading && countdown === 0 
-              ? 'AI Sedang Meracik...' 
+              ? 'Dokter AI Sedang Menganalisis...' 
               : countdown > 0 
-                ? `⏳ AI Sibuk. Coba otomatis dlm ${countdown}s` 
+                ? `⏳ Sistem Sibuk. Coba otomatis dlm ${countdown}s` 
                 : 'Cari Rekomendasi Menu'
             }
           </button>
@@ -310,7 +348,6 @@ export default function SmartFoodPrepDashboard() {
               {recommendations.map((meal, index) => (
                 <div key={`${meal.id}-${index}`} draggable onDragStart={(e) => handleDragStart(e, meal)} className="bg-white border border-slate-100 shadow-sm p-4 rounded-2xl relative group hover:border-emerald-300 hover:shadow-md transition-all cursor-grab active:cursor-grabbing">
                   
-                  {/* 👇 FRONTEND FIX: Tambah inline-block, max-w-full, break-words, whitespace-normal 👇 */}
                   {meal.statusBahan !== "-" && (
                     <div className="mb-2">
                       <span className={`text-[10px] font-bold px-2 py-1.5 rounded-md inline-block max-w-full break-words whitespace-normal leading-tight ${meal.statusBahan.includes('Lengkap') || meal.statusBahan.includes('100%') ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
@@ -323,6 +360,14 @@ export default function SmartFoodPrepDashboard() {
                      <h4 className="font-bold text-sm leading-snug text-slate-800">{meal.nama}</h4>
                      <span className={`text-[9px] uppercase px-2 py-1 rounded-full font-extrabold tracking-wider shrink-0 ${meal.kategori === 'Minuman' ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'}`}>{meal.kategori}</span>
                   </div>
+
+                  {/* WARNING MEDIS DI KARTU JIKA AI MENDETEKSI BAHAYA */}
+                  {meal.resep && meal.resep.includes('⚠️') && (
+                    <div className="mt-2 bg-rose-50 border border-rose-100 p-2 rounded-lg text-[10px] text-rose-600 font-bold leading-relaxed">
+                      {meal.resep}
+                    </div>
+                  )}
+
                   <p className="text-[11px] text-slate-500 mt-2 font-medium">
                     <span className="text-emerald-600 font-bold">{meal.kalori} kcal</span> • P: {meal.protein}g • K: {meal.karbo}g
                   </p>
@@ -460,7 +505,6 @@ export default function SmartFoodPrepDashboard() {
               </div>
               <div className="p-6 overflow-y-auto custom-scrollbar">
                 
-                {/* 👇 MODAL FIX: Jaring pengaman UI untuk Modal 👇 */}
                 {recipeModal.statusBahan !== "-" && (
                     <div className="mb-4">
                       <span className={`inline-block px-3 py-2 rounded-lg text-xs font-bold max-w-full break-words whitespace-normal leading-relaxed ${recipeModal.statusBahan.includes('Lengkap') || recipeModal.statusBahan.includes('100%') ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
@@ -480,8 +524,10 @@ export default function SmartFoodPrepDashboard() {
                     <p className="text-sm font-black text-slate-700">{recipeModal.vitamin || '-'}</p>
                   </div>
                 </div>
-                <h3 className="font-extrabold text-sm text-slate-800 mb-3 uppercase tracking-wider">Preview Menu:</h3>
-                <div className="prose prose-sm prose-slate max-w-none whitespace-pre-wrap font-medium text-slate-600 leading-relaxed bg-orange-50/50 p-5 rounded-2xl border border-orange-100">
+                <h3 className="font-extrabold text-sm text-slate-800 mb-3 uppercase tracking-wider">Tinjauan Medis & Rasa:</h3>
+                
+                {/* STYLING KHUSUS JIKA ADA PERINGATAN MEDIS DI MODAL */}
+                <div className={`prose prose-sm max-w-none whitespace-pre-wrap font-medium p-5 rounded-2xl border ${recipeModal.resep.includes('⚠️') ? 'bg-rose-50 border-rose-200 text-rose-700' : 'bg-orange-50/50 border-orange-100 text-slate-600'}`}>
                   {recipeModal.resep}
                 </div>
               </div>
@@ -502,6 +548,7 @@ export default function SmartFoodPrepDashboard() {
           </div>
         )}
 
+        {/* MODAL PILIH HARI */}
         {selectedMeal && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setSelectedMeal(null)}></div>
@@ -525,6 +572,64 @@ export default function SmartFoodPrepDashboard() {
             </div>
           </div>
         )}
+
+        {/* 👇 MODAL EDIT PROFIL MEDIS DARI DASHBOARD 👇 */}
+        {isProfileModalOpen && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsProfileModalOpen(false)}></div>
+            <div className="bg-white rounded-[2rem] w-full max-w-md shadow-2xl relative z-10 overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+              <div className="bg-gradient-to-r from-rose-500 to-rose-400 p-6 text-white text-center">
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-2xl mx-auto mb-3">🏥</div>
+                <h2 className="text-2xl font-black">Profil Medis Anda</h2>
+                <p className="text-rose-50 text-xs mt-1 font-medium">Ubah data untuk panduan gizi AI yang akurat.</p>
+              </div>
+              
+              <div className="p-6 space-y-5">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Nama Panggilan *</label>
+                  <input 
+                    type="text" 
+                    placeholder="Nama Anda"
+                    value={profile.name}
+                    onChange={(e) => setProfile({...profile, name: e.target.value})}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-700 font-bold focus:outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Tahun Lahir *</label>
+                  <input 
+                    type="number" 
+                    placeholder="Contoh: 1995" 
+                    value={profile.birthYear}
+                    onChange={(e) => setProfile({...profile, birthYear: e.target.value})}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-700 font-bold focus:outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 transition-all"
+                  />
+                  {profile.birthYear && (
+                    <p className="text-[10px] text-emerald-500 font-bold mt-2">✨ Umur AI Real-time: {new Date().getFullYear() - parseInt(profile.birthYear)} Tahun</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Riwayat Penyakit (Opsional)</label>
+                  <textarea 
+                    placeholder="Contoh: Hipertensi, Asam Urat, Diabetes..." 
+                    value={profile.conditions}
+                    onChange={(e) => setProfile({...profile, conditions: e.target.value})}
+                    className="w-full h-20 bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-700 focus:outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 resize-none transition-all"
+                  />
+                  <p className="text-[10px] text-slate-400 font-medium mt-2">Pisahkan dengan koma jika lebih dari satu.</p>
+                </div>
+              </div>
+
+              <div className="p-4 border-t border-slate-100 bg-slate-50 flex gap-3">
+                <button onClick={() => setIsProfileModalOpen(false)} className="flex-1 py-3 bg-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-300 transition-colors text-sm">Batal</button>
+                <button onClick={saveProfile} className="flex-1 py-3 bg-rose-500 text-white font-extrabold rounded-xl hover:bg-rose-600 shadow-md shadow-rose-200 transition-all text-sm">Simpan Profil</button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </section>
       
       <style dangerouslySetInnerHTML={{__html: `.custom-scrollbar::-webkit-scrollbar { width: 6px; height: 8px; } @media (min-width: 768px) { .custom-scrollbar::-webkit-scrollbar { width: 10px; height: 12px; } } .custom-scrollbar::-webkit-scrollbar-track { background: transparent; border-radius: 10px; margin: 5px; } .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(16,185,129,0.2); border-radius: 10px; border: 2px solid transparent; background-clip: padding-box; } .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: rgba(16,185,129,0.5); }`}} />
