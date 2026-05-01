@@ -389,7 +389,7 @@ export default function SmartFoodPrepDashboard() {
                             <div className="absolute top-0 right-0 w-16 h-16 bg-rose-500 opacity-5 rounded-full -mr-4 -mt-4"></div>
                             <h5 className="font-extrabold text-sm text-rose-800">{advice.nama}</h5>
                             <p className="text-rose-600 text-xs font-medium leading-relaxed">
-                              {advice.resep.replace('⚠️', '💡')}
+                              {advice.resep.replace('⚠️', '💡').replace('✅', '💡')}
                             </p>
                           </div>
                         ))}
@@ -431,11 +431,18 @@ export default function SmartFoodPrepDashboard() {
                             <h4 className="font-bold text-[15px] leading-snug text-slate-800 mt-1">{meal.nama}</h4>
                           </div>
 
-                          {/* 👇 UX BARU: PERINGATAN DIPERSINGKAT AGAR KARTU RAPI 👇 */}
+                          {/* 👇 LOGIKA WARNA HIJAU/MERAH BERDASARKAN STATUS AMAN/BAHAYA 👇 */}
                           {meal.resep && meal.resep.includes('⚠️') && (
                             <div className="mt-3 bg-rose-50 border border-rose-200 p-2.5 rounded-xl flex items-center gap-2 shadow-sm">
                               <span className="text-sm">⚠️</span>
-                              <p className="text-[10px] font-extrabold text-rose-700">Peringatan Medis. Cek Detail & Gizi!</p>
+                              <p className="text-[10px] font-extrabold text-rose-700">Peringatan Medis. Cek Detail!</p>
+                            </div>
+                          )}
+
+                          {meal.resep && meal.resep.includes('✅') && (
+                            <div className="mt-3 bg-emerald-50 border border-emerald-200 p-2.5 rounded-xl flex items-center gap-2 shadow-sm">
+                              <span className="text-sm">✅</span>
+                              <p className="text-[10px] font-extrabold text-emerald-700">Rekomendasi Aman AI</p>
                             </div>
                           )}
 
@@ -592,7 +599,7 @@ export default function SmartFoodPrepDashboard() {
             <div className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[85vh]">
               <div className="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-start">
                 <div>
-                  <span className={`text-[10px] font-bold uppercase tracking-widest mb-1 block ${recipeModal.kategori?.toUpperCase().includes('MINUMAN') ? 'text-blue-500' : 'text-emerald-500'}`}>Detail {recipeModal.kategori}</span>
+                  <span className={`text-[10px] font-bold uppercase tracking-widest mb-1 block ${recipeModal.kategori?.toUpperCase().includes('MINUMAN') ? 'text-blue-500' : 'text-emerald-500'}`}>Detail Menu</span>
                   <h2 className="text-xl font-black text-slate-800 leading-tight">{recipeModal.nama}</h2>
                 </div>
                 <button onClick={() => setRecipeModal(null)} className="w-8 h-8 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-400 hover:text-rose-500 hover:border-rose-200 transition-colors font-bold">✕</button>
@@ -633,10 +640,10 @@ export default function SmartFoodPrepDashboard() {
                   </div>
                 </div>
 
-                {/* MODAL MENAMPILKAN PENJELASAN FULL TERMASUK ALASAN MEDIS */}
                 <h3 className="font-extrabold text-sm text-slate-800 mb-3 uppercase tracking-wider">Tinjauan Medis & Rasa:</h3>
-                <div className={`prose prose-sm max-w-none whitespace-pre-wrap font-medium p-5 rounded-2xl border ${recipeModal.resep.includes('⚠️') ? 'bg-rose-50 border-rose-200 text-rose-700' : 'bg-orange-50/50 border-orange-100 text-slate-600'}`}>
-                  {recipeModal.resep}
+                {/* 👇 MODAL IKUT BERUBAH WARNA SESUAI STATUS (MERAH VS HIJAU) 👇 */}
+                <div className={`prose prose-sm max-w-none whitespace-pre-wrap font-medium p-5 rounded-2xl border ${recipeModal.resep.includes('⚠️') ? 'bg-rose-50 border-rose-200 text-rose-700' : recipeModal.resep.includes('✅') ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
+                  {recipeModal.resep.replace('✅ ', '') /* Hapus icon saat di dalam modal agar rapi */}
                 </div>
               </div>
 
