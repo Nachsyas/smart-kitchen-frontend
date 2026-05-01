@@ -7,10 +7,12 @@ export default function SmartFoodPrepDashboard() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [recommendations, setRecommendations] = useState<any[]>([]);
+  
   const [lockedDays, setLockedDays] = useState<Record<string, boolean>>({});
   const [weeklyPlan, setWeeklyPlan] = useState<Record<string, any[]>>({
     Senin: [], Selasa: [], Rabu: [], Kamis: [], Jumat: [], Sabtu: [], Minggu: []
   });
+  
   const [selectedMeal, setSelectedMeal] = useState<any>(null);
   const [recipeModal, setRecipeModal] = useState<any>(null);
   const [selectedDayModal, setSelectedDayModal] = useState('Senin');
@@ -27,16 +29,31 @@ export default function SmartFoodPrepDashboard() {
 
   const [profile, setProfile] = useState<{name: string, birthYear: string, conditions: string}>({ name: '', birthYear: '', conditions: '' });
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const dayIndices: Record<string, number> = { Senin: 1, Selasa: 2, Rabu: 3, Kamis: 4, Jumat: 5, Sabtu: 6, Minggu: 0 };
   const [currentDayIndex, setCurrentDayIndex] = useState(1);
 
   useEffect(() => {
     const savedProfile = localStorage.getItem('smartFoodHealthProfile');
-    if (savedProfile) {
-      setProfile(JSON.parse(savedProfile));
-    }
+    if (savedProfile) setProfile(JSON.parse(savedProfile));
+
+    const savedPlan = localStorage.getItem('smartFoodWeeklyPlan');
+    if (savedPlan) setWeeklyPlan(JSON.parse(savedPlan));
+
+    const savedLocks = localStorage.getItem('smartFoodLockedDays');
+    if (savedLocks) setLockedDays(JSON.parse(savedLocks));
+
+    setIsInitialLoad(false);
   }, []);
+
+  useEffect(() => {
+    if (!isInitialLoad) {
+      localStorage.setItem('smartFoodWeeklyPlan', JSON.stringify(weeklyPlan));
+      localStorage.setItem('smartFoodLockedDays', JSON.stringify(lockedDays));
+    }
+  }, [weeklyPlan, lockedDays, isInitialLoad]);
 
   const saveProfile = () => {
     localStorage.setItem('smartFoodHealthProfile', JSON.stringify(profile));
@@ -148,9 +165,9 @@ export default function SmartFoodPrepDashboard() {
           protein: parseInt(item.protein || item.Protein) || 0,
           karbo: parseInt(item.karbo || item.Karbo) || 0,
           lemak: parseInt(item.lemak || item.Lemak) || 0,
-          gula: parseInt(item.gula || item.Gula) || 0,       // TANGKAP GULA
-          serat: parseInt(item.serat || item.Serat) || 0,    // TANGKAP SERAT
-          sodium: parseInt(item.sodium || item.Sodium) || 0, // TANGKAP SODIUM
+          gula: parseInt(item.gula || item.Gula) || 0,
+          serat: parseInt(item.serat || item.Serat) || 0,
+          sodium: parseInt(item.sodium || item.Sodium) || 0,
           zatBesi: parseInt(item.zat_besi || item.Zat_besi || item.zatBesi) || 0,
           vitamin: item.vitamin || item.Vitamin || "-",
           resep: item.resep || item.Resep || "Resep tidak disediakan AI.",
@@ -236,7 +253,7 @@ export default function SmartFoodPrepDashboard() {
         if (res.ok) {
           setLockedDays(prev => ({ ...prev, [day]: true }));
         } else {
-          alert("Gagal menyimpan jadwal ke database.");
+          alert("Gagal menyimpan jadwal ke database server.");
         }
       } catch (e) {
         console.error("Gagal koneksi ke DB:", e);
@@ -251,15 +268,18 @@ export default function SmartFoodPrepDashboard() {
     alert("📄 Mempersiapkan Laporan Bulanan AI Anda... (Akan diunduh dalam bentuk PDF)");
   };
 
-  // LOGIKA DIAGRAM PIE BERDASARKAN RASIO GRAM ABSOLUT (PROTEIN, KARBO, LEMAK)
-  const currentMeals = weeklyPlan[activeDay];
-  const totalKalori = currentMeals.reduce((s, m) => s + m.kalori, 0);
-  const totalProtein = currentMeals.reduce((s, m) => s + m.protein, 0);
-  const totalKarbo = currentMeals.reduce((s, m) => s + m.karbo, 0);
-  const totalLemak = currentMeals.reduce((s, m) => s + m.lemak, 0);
+  const currentMeals = weeklyPlan[activeDay] || [];
+  
+  const totalKalori = currentMeals.reduce((s, m) => s + (m.kalori || 0), 0);
+  const totalProtein = currentMeals.reduce((s, m) => s + (m.protein || 0), 0);
+  const totalKarbo = currentMeals.reduce((s, m) => s + (m.karbo || 0), 0);
+  const totalLemak = currentMeals.reduce((s, m) => s + (m.lemak || 0), 0);
+  
+  const totalGula = currentMeals.reduce((s, m) => s + (m.gula || 0), 0);
+  const totalSerat = currentMeals.reduce((s, m) => s + (m.serat || 0), 0);
+  const totalSodium = currentMeals.reduce((s, m) => s + (m.sodium || 0), 0);
   
   const totalMacros = totalProtein + totalKarbo + totalLemak;
-  
   const pVisual = totalMacros > 0 ? (totalProtein / totalMacros) * 100 : 0;
   const kVisual = totalMacros > 0 ? (totalKarbo / totalMacros) * 100 : 0;
   const lVisual = totalMacros > 0 ? (totalLemak / totalMacros) * 100 : 0;
@@ -327,10 +347,6 @@ export default function SmartFoodPrepDashboard() {
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar flex flex-col relative" onScroll={handleScroll}>
-          <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4 shrink-0 flex items-center gap-2">
-            <span className="w-4 h-4 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center text-[10px]">✨</span>
-            Daftar Pilihan Menu
-          </h3>
           
           {loading && countdown === 0 ? (
              <div className="flex-1 flex flex-col items-center justify-center pb-10">
@@ -341,39 +357,95 @@ export default function SmartFoodPrepDashboard() {
                {countdown > 0 ? "Menunggu server Google rileks sebentar..." : "Ayo ketikkan makanan di atas!"}
              </div>
           ) : (
-            <div className="space-y-3 pb-4">
-              {recommendations.map((meal, index) => (
-                <div key={`${meal.id}-${index}`} draggable onDragStart={(e) => handleDragStart(e, meal)} className="bg-white border border-slate-100 shadow-sm p-4 rounded-2xl relative group hover:border-emerald-300 hover:shadow-md transition-all cursor-grab active:cursor-grabbing">
+            
+            // 👇 LOGIKA FILTER UI PINTAR DIMULAI DI SINI 👇
+            (() => {
+              // Pisahkan item yang berupa nasihat gaya hidup/sistem
+              const adviceItems = recommendations.filter(meal => 
+                meal.kategori.toUpperCase().includes('GAYA HIDUP') || 
+                meal.kategori.toUpperCase().includes('KEBIASAAN') ||
+                meal.kategori.toUpperCase().includes('SARAN') ||
+                meal.kategori.toUpperCase().includes('TIPS') ||
+                meal.kategori.toUpperCase().includes('SISTEM')
+              );
+              
+              // Pisahkan item yang benar-benar makanan/minuman
+              const mealItems = recommendations.filter(meal => 
+                !meal.kategori.toUpperCase().includes('GAYA HIDUP') && 
+                !meal.kategori.toUpperCase().includes('KEBIASAAN') &&
+                !meal.kategori.toUpperCase().includes('SARAN') &&
+                !meal.kategori.toUpperCase().includes('TIPS') &&
+                !meal.kategori.toUpperCase().includes('SISTEM')
+              );
+
+              return (
+                <div className="space-y-4 pb-4">
                   
-                  {meal.statusBahan !== "-" && (
-                    <div className="mb-2">
-                      <span className={`text-[10px] font-bold px-2 py-1.5 rounded-md inline-block max-w-full break-words whitespace-normal leading-tight ${meal.statusBahan.includes('Lengkap') || meal.statusBahan.includes('100%') ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                        {meal.statusBahan}
-                      </span>
+                  {/* RENDER ADVICE ITEMS (CATATAN DOKTER) SEBAGAI BANNER NON-DRAGGABLE */}
+                  {adviceItems.length > 0 && (
+                    <div className="mb-6">
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-rose-500 mb-2 flex items-center gap-2">
+                        <span>🩺</span> Catatan Dokter AI
+                      </h4>
+                      <div className="space-y-3">
+                        {adviceItems.map((advice, idx) => (
+                          <div key={`advice-${idx}`} className="bg-rose-50 border border-rose-100 p-4 rounded-2xl flex flex-col gap-2 shadow-sm relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-16 h-16 bg-rose-500 opacity-5 rounded-full -mr-4 -mt-4"></div>
+                            <h5 className="font-extrabold text-sm text-rose-800">{advice.nama}</h5>
+                            <p className="text-rose-600 text-xs font-medium leading-relaxed">
+                              {/* Hapus icon warning double jika ada */}
+                              {advice.resep.replace('⚠️', '💡')}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
 
-                  <div className="flex justify-between items-start pr-12 mt-1">
-                     <h4 className="font-bold text-sm leading-snug text-slate-800">{meal.nama}</h4>
-                     <span className={`text-[9px] uppercase px-2 py-1 rounded-full font-extrabold tracking-wider shrink-0 ${meal.kategori === 'Minuman' ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'}`}>{meal.kategori}</span>
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4 shrink-0 flex items-center gap-2">
+                    <span className="w-4 h-4 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center text-[10px]">✨</span>
+                    Daftar Pilihan Menu
+                  </h3>
+
+                  {/* RENDER MEAL ITEMS (DRAGGABLE FOOD CARDS) */}
+                  <div className="space-y-3">
+                    {mealItems.map((meal, index) => (
+                      <div key={`${meal.id}-${index}`} draggable onDragStart={(e) => handleDragStart(e, meal)} className="bg-white border border-slate-100 shadow-sm p-4 rounded-2xl relative group hover:border-emerald-300 hover:shadow-md transition-all cursor-grab active:cursor-grabbing">
+                        
+                        {meal.statusBahan !== "-" && (
+                          <div className="mb-2">
+                            <span className={`text-[10px] font-bold px-2 py-1.5 rounded-md inline-block max-w-full break-words whitespace-normal leading-tight ${meal.statusBahan.includes('Lengkap') || meal.statusBahan.includes('100%') ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                              {meal.statusBahan}
+                            </span>
+                          </div>
+                        )}
+
+                        <div className="flex justify-between items-start pr-12 mt-1">
+                          <h4 className="font-bold text-sm leading-snug text-slate-800">{meal.nama}</h4>
+                          <span className={`text-[9px] uppercase px-2 py-1 rounded-full font-extrabold tracking-wider shrink-0 ${meal.kategori === 'Minuman' ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'}`}>{meal.kategori}</span>
+                        </div>
+
+                        {meal.resep && meal.resep.includes('⚠️') && (
+                          <div className="mt-2 bg-rose-50 border border-rose-100 p-2 rounded-lg text-[10px] text-rose-600 font-bold leading-relaxed">
+                            {meal.resep}
+                          </div>
+                        )}
+
+                        <p className="text-[11px] text-slate-500 mt-2 font-medium">
+                          <span className="text-emerald-600 font-bold">{meal.kalori} kcal</span> • P: {meal.protein}g • K: {meal.karbo}g
+                        </p>
+                        <button onClick={() => setRecipeModal(meal)} className="mt-3 text-[10px] uppercase font-bold text-emerald-500 hover:text-emerald-400 flex items-center gap-1">
+                          📖 Lihat Detail & Gizi
+                        </button>
+                        <button onClick={() => setSelectedMeal(meal)} className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-emerald-500 hover:text-white font-bold shadow-sm transition-all transform hover:scale-110">+</button>
+                      </div>
+                    ))}
                   </div>
 
-                  {meal.resep && meal.resep.includes('⚠️') && (
-                    <div className="mt-2 bg-rose-50 border border-rose-100 p-2 rounded-lg text-[10px] text-rose-600 font-bold leading-relaxed">
-                      {meal.resep}
-                    </div>
-                  )}
-
-                  <p className="text-[11px] text-slate-500 mt-2 font-medium">
-                    <span className="text-emerald-600 font-bold">{meal.kalori} kcal</span> • P: {meal.protein}g • K: {meal.karbo}g
-                  </p>
-                  <button onClick={() => setRecipeModal(meal)} className="mt-3 text-[10px] uppercase font-bold text-emerald-500 hover:text-emerald-400 flex items-center gap-1">
-                    📖 Lihat Detail & Gizi
-                  </button>
-                  <button onClick={() => setSelectedMeal(meal)} className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-emerald-500 hover:text-white font-bold shadow-sm transition-all transform hover:scale-110">+</button>
                 </div>
-              ))}
-            </div>
+              );
+            })()
+            // 👆 LOGIKA FILTER UI PINTAR SELESAI DI SINI 👆
           )}
 
           {isFetchingMore && (
@@ -456,7 +528,7 @@ export default function SmartFoodPrepDashboard() {
                 </button>
               </div>
               
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                 <div className="bg-gradient-to-br from-emerald-50 to-white p-4 rounded-2xl border border-emerald-100 shadow-sm flex flex-col items-center justify-center text-center">
                   <p className="text-[10px] uppercase tracking-widest text-emerald-600 font-bold mb-1">Total Kalori</p>
                   <p className="text-2xl font-black text-slate-800">{totalKalori} <span className="text-xs font-medium">kcal</span></p>
@@ -474,6 +546,22 @@ export default function SmartFoodPrepDashboard() {
                   <p className="text-2xl font-black text-rose-700">{totalLemak} <span className="text-xs font-medium">g</span></p>
                 </div>
               </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-amber-50 p-3 rounded-xl border border-amber-100 flex flex-col items-center justify-center text-center shadow-sm">
+                  <p className="text-[9px] uppercase tracking-widest text-amber-600 font-bold mb-1">Gula</p>
+                  <p className="text-lg font-black text-amber-700">{totalGula} <span className="text-[10px] font-medium">g</span></p>
+                </div>
+                <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-100 flex flex-col items-center justify-center text-center shadow-sm">
+                  <p className="text-[9px] uppercase tracking-widest text-emerald-600 font-bold mb-1">Serat</p>
+                  <p className="text-lg font-black text-emerald-700">{totalSerat} <span className="text-[10px] font-medium">g</span></p>
+                </div>
+                <div className="bg-purple-50 p-3 rounded-xl border border-purple-100 flex flex-col items-center justify-center text-center shadow-sm">
+                  <p className="text-[9px] uppercase tracking-widest text-purple-600 font-bold mb-1">Sodium</p>
+                  <p className="text-lg font-black text-purple-700">{totalSodium} <span className="text-[10px] font-medium">mg</span></p>
+                </div>
+              </div>
+
            </div>
 
            <div className="flex flex-col items-center justify-center gap-3 relative z-10 shrink-0">
@@ -487,7 +575,7 @@ export default function SmartFoodPrepDashboard() {
            </div>
         </div>
 
-        {/* MODAL RESEP DENGAN DASHBOARD GIZI KOMPREHENSIF */}
+        {/* MODAL RESEP */}
         {recipeModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setRecipeModal(null)}></div>
@@ -509,7 +597,6 @@ export default function SmartFoodPrepDashboard() {
                     </div>
                 )}
 
-                {/* 👇 METRIK GIZI KOMPREHENSIF 👇 */}
                 <div className="mb-6">
                   <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Makronutrien (Energi & Pembangun)</h3>
                   <div className="grid grid-cols-4 gap-2 mb-4">
