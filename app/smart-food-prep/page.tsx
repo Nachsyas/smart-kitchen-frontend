@@ -25,14 +25,12 @@ export default function SmartFoodPrepDashboard() {
 
   const [mealReminder, setMealReminder] = useState<string | null>(null);
 
-  // 👇 STATE PROFIL MEDIS 👇
   const [profile, setProfile] = useState<{name: string, birthYear: string, conditions: string}>({ name: '', birthYear: '', conditions: '' });
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   const dayIndices: Record<string, number> = { Senin: 1, Selasa: 2, Rabu: 3, Kamis: 4, Jumat: 5, Sabtu: 6, Minggu: 0 };
   const [currentDayIndex, setCurrentDayIndex] = useState(1);
 
-  // AMBIL PROFIL DARI LOCAL STORAGE
   useEffect(() => {
     const savedProfile = localStorage.getItem('smartFoodHealthProfile');
     if (savedProfile) {
@@ -94,7 +92,6 @@ export default function SmartFoodPrepDashboard() {
 
     const mode = activeTab === 'Beli Makanan' ? 'beli' : 'masak';
     
-    // 👇 LOGIKA PENYELUNDUPAN DATA MEDIS KE BACKEND 👇
     const currentYear = new Date().getFullYear();
     const ageStr = profile.birthYear ? (currentYear - parseInt(profile.birthYear)).toString() : "Umum";
     const condStr = profile.conditions ? profile.conditions : "Tidak ada";
@@ -151,6 +148,9 @@ export default function SmartFoodPrepDashboard() {
           protein: parseInt(item.protein || item.Protein) || 0,
           karbo: parseInt(item.karbo || item.Karbo) || 0,
           lemak: parseInt(item.lemak || item.Lemak) || 0,
+          gula: parseInt(item.gula || item.Gula) || 0,       // TANGKAP GULA
+          serat: parseInt(item.serat || item.Serat) || 0,    // TANGKAP SERAT
+          sodium: parseInt(item.sodium || item.Sodium) || 0, // TANGKAP SODIUM
           zatBesi: parseInt(item.zat_besi || item.Zat_besi || item.zatBesi) || 0,
           vitamin: item.vitamin || item.Vitamin || "-",
           resep: item.resep || item.Resep || "Resep tidak disediakan AI.",
@@ -251,19 +251,18 @@ export default function SmartFoodPrepDashboard() {
     alert("📄 Mempersiapkan Laporan Bulanan AI Anda... (Akan diunduh dalam bentuk PDF)");
   };
 
+  // LOGIKA DIAGRAM PIE BERDASARKAN RASIO GRAM ABSOLUT (PROTEIN, KARBO, LEMAK)
   const currentMeals = weeklyPlan[activeDay];
   const totalKalori = currentMeals.reduce((s, m) => s + m.kalori, 0);
   const totalProtein = currentMeals.reduce((s, m) => s + m.protein, 0);
   const totalKarbo = currentMeals.reduce((s, m) => s + m.karbo, 0);
   const totalLemak = currentMeals.reduce((s, m) => s + m.lemak, 0);
   
-  const pPct = Math.min(100, Math.round((totalProtein / 50) * 100)); 
-  const kPct = Math.min(100, Math.round((totalKarbo / 250) * 100)); 
-  const lPct = Math.min(100, Math.round((totalLemak / 60) * 100)); 
-  const totalVisual = pPct + kPct + lPct;
-  const pVisual = totalVisual > 0 ? (pPct / totalVisual) * 100 : 0;
-  const kVisual = totalVisual > 0 ? (kPct / totalVisual) * 100 : 0;
-  const lVisual = totalVisual > 0 ? (lPct / totalVisual) * 100 : 0;
+  const totalMacros = totalProtein + totalKarbo + totalLemak;
+  
+  const pVisual = totalMacros > 0 ? (totalProtein / totalMacros) * 100 : 0;
+  const kVisual = totalMacros > 0 ? (totalKarbo / totalMacros) * 100 : 0;
+  const lVisual = totalMacros > 0 ? (totalLemak / totalMacros) * 100 : 0;
 
   return (
     <main className="h-screen w-full bg-[#FDFBF7] text-slate-800 flex flex-col md:flex-row overflow-hidden font-sans relative">
@@ -285,7 +284,6 @@ export default function SmartFoodPrepDashboard() {
               <span className="text-sm">←</span> Ganti Akun
             </Link>
             
-            {/* TOMBOL BUKA PROFIL */}
             <button onClick={() => setIsProfileModalOpen(true)} className="flex items-center gap-2 bg-rose-50 text-rose-600 px-3 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest hover:bg-rose-100 transition-colors border border-rose-100 shadow-sm">
               🏥 Profil Medis
             </button>
@@ -294,7 +292,6 @@ export default function SmartFoodPrepDashboard() {
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600 text-xl shadow-sm">🥑</div>
             <div>
-              {/* SAPAAN DINAMIS NAMA USER */}
               <h1 className="font-extrabold text-xl text-slate-800 tracking-tight">Halo, {profile.name || 'Sobat'}! 👋</h1>
               <p className="text-[10px] uppercase tracking-widest text-emerald-500 font-bold">AI Clinical Nutritionist</p>
             </div>
@@ -361,7 +358,6 @@ export default function SmartFoodPrepDashboard() {
                      <span className={`text-[9px] uppercase px-2 py-1 rounded-full font-extrabold tracking-wider shrink-0 ${meal.kategori === 'Minuman' ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'}`}>{meal.kategori}</span>
                   </div>
 
-                  {/* WARNING MEDIS DI KARTU JIKA AI MENDETEKSI BAHAYA */}
                   {meal.resep && meal.resep.includes('⚠️') && (
                     <div className="mt-2 bg-rose-50 border border-rose-100 p-2 rounded-lg text-[10px] text-rose-600 font-bold leading-relaxed">
                       {meal.resep}
@@ -491,7 +487,7 @@ export default function SmartFoodPrepDashboard() {
            </div>
         </div>
 
-        {/* MODAL RESEP */}
+        {/* MODAL RESEP DENGAN DASHBOARD GIZI KOMPREHENSIF */}
         {recipeModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setRecipeModal(null)}></div>
@@ -513,20 +509,34 @@ export default function SmartFoodPrepDashboard() {
                     </div>
                 )}
 
-                <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl mb-6 flex gap-4">
-                  <div className="flex-1">
-                    <p className="text-[10px] font-bold text-blue-500 uppercase">Zat Besi</p>
-                    <p className="text-sm font-black text-slate-700">{recipeModal.zatBesi || 0} mg</p>
+                {/* 👇 METRIK GIZI KOMPREHENSIF 👇 */}
+                <div className="mb-6">
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Makronutrien (Energi & Pembangun)</h3>
+                  <div className="grid grid-cols-4 gap-2 mb-4">
+                    <div className="bg-slate-50 border border-slate-100 p-2 rounded-xl text-center"><p className="text-[9px] font-bold text-slate-500 uppercase">Kalori</p><p className="text-sm font-black text-slate-800">{recipeModal.kalori}</p></div>
+                    <div className="bg-blue-50 border border-blue-100 p-2 rounded-xl text-center"><p className="text-[9px] font-bold text-blue-500 uppercase">Protein</p><p className="text-sm font-black text-blue-700">{recipeModal.protein}g</p></div>
+                    <div className="bg-orange-50 border border-orange-100 p-2 rounded-xl text-center"><p className="text-[9px] font-bold text-orange-500 uppercase">Karbo</p><p className="text-sm font-black text-orange-700">{recipeModal.karbo}g</p></div>
+                    <div className="bg-rose-50 border border-rose-100 p-2 rounded-xl text-center"><p className="text-[9px] font-bold text-rose-500 uppercase">Lemak</p><p className="text-sm font-black text-rose-700">{recipeModal.lemak}g</p></div>
                   </div>
-                  <div className="w-px bg-blue-200"></div>
-                  <div className="flex-1">
-                    <p className="text-[10px] font-bold text-blue-500 uppercase">Vitamin</p>
-                    <p className="text-sm font-black text-slate-700">{recipeModal.vitamin || '-'}</p>
+
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Mikronutrien & Peringatan Dini</h3>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="bg-amber-50 border border-amber-100 p-2 rounded-xl flex flex-col items-center justify-center text-center">
+                      <p className="text-[9px] font-bold text-amber-600 uppercase">Gula (Sugar)</p>
+                      <p className="text-sm font-black text-amber-700">{recipeModal.gula || 0}g</p>
+                    </div>
+                    <div className="bg-emerald-50 border border-emerald-100 p-2 rounded-xl flex flex-col items-center justify-center text-center">
+                      <p className="text-[9px] font-bold text-emerald-600 uppercase">Serat (Fiber)</p>
+                      <p className="text-sm font-black text-emerald-700">{recipeModal.serat || 0}g</p>
+                    </div>
+                    <div className="bg-purple-50 border border-purple-100 p-2 rounded-xl flex flex-col items-center justify-center text-center">
+                      <p className="text-[9px] font-bold text-purple-600 uppercase">Sodium (Garam)</p>
+                      <p className="text-sm font-black text-purple-700">{recipeModal.sodium || 0}mg</p>
+                    </div>
                   </div>
                 </div>
+
                 <h3 className="font-extrabold text-sm text-slate-800 mb-3 uppercase tracking-wider">Tinjauan Medis & Rasa:</h3>
-                
-                {/* STYLING KHUSUS JIKA ADA PERINGATAN MEDIS DI MODAL */}
                 <div className={`prose prose-sm max-w-none whitespace-pre-wrap font-medium p-5 rounded-2xl border ${recipeModal.resep.includes('⚠️') ? 'bg-rose-50 border-rose-200 text-rose-700' : 'bg-orange-50/50 border-orange-100 text-slate-600'}`}>
                   {recipeModal.resep}
                 </div>
@@ -573,7 +583,7 @@ export default function SmartFoodPrepDashboard() {
           </div>
         )}
 
-        {/* 👇 MODAL EDIT PROFIL MEDIS DARI DASHBOARD 👇 */}
+        {/* MODAL EDIT PROFIL MEDIS */}
         {isProfileModalOpen && (
           <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsProfileModalOpen(false)}></div>
