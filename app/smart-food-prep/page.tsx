@@ -358,30 +358,26 @@ export default function SmartFoodPrepDashboard() {
              </div>
           ) : (
             
-            // 👇 LOGIKA FILTER UI PINTAR DIMULAI DI SINI 👇
             (() => {
-              // Pisahkan item yang berupa nasihat gaya hidup/sistem
               const adviceItems = recommendations.filter(meal => 
-                meal.kategori.toUpperCase().includes('GAYA HIDUP') || 
-                meal.kategori.toUpperCase().includes('KEBIASAAN') ||
-                meal.kategori.toUpperCase().includes('SARAN') ||
-                meal.kategori.toUpperCase().includes('TIPS') ||
-                meal.kategori.toUpperCase().includes('SISTEM')
+                meal.kategori?.toUpperCase().includes('GAYA HIDUP') || 
+                meal.kategori?.toUpperCase().includes('KEBIASAAN') ||
+                meal.kategori?.toUpperCase().includes('SARAN') ||
+                meal.kategori?.toUpperCase().includes('TIPS') ||
+                meal.kategori?.toUpperCase().includes('SISTEM')
               );
               
-              // Pisahkan item yang benar-benar makanan/minuman
               const mealItems = recommendations.filter(meal => 
-                !meal.kategori.toUpperCase().includes('GAYA HIDUP') && 
-                !meal.kategori.toUpperCase().includes('KEBIASAAN') &&
-                !meal.kategori.toUpperCase().includes('SARAN') &&
-                !meal.kategori.toUpperCase().includes('TIPS') &&
-                !meal.kategori.toUpperCase().includes('SISTEM')
+                !meal.kategori?.toUpperCase().includes('GAYA HIDUP') && 
+                !meal.kategori?.toUpperCase().includes('KEBIASAAN') &&
+                !meal.kategori?.toUpperCase().includes('SARAN') &&
+                !meal.kategori?.toUpperCase().includes('TIPS') &&
+                !meal.kategori?.toUpperCase().includes('SISTEM')
               );
 
               return (
                 <div className="space-y-4 pb-4">
                   
-                  {/* RENDER ADVICE ITEMS (CATATAN DOKTER) SEBAGAI BANNER NON-DRAGGABLE */}
                   {adviceItems.length > 0 && (
                     <div className="mb-6">
                       <h4 className="text-[10px] font-black uppercase tracking-widest text-rose-500 mb-2 flex items-center gap-2">
@@ -393,7 +389,6 @@ export default function SmartFoodPrepDashboard() {
                             <div className="absolute top-0 right-0 w-16 h-16 bg-rose-500 opacity-5 rounded-full -mr-4 -mt-4"></div>
                             <h5 className="font-extrabold text-sm text-rose-800">{advice.nama}</h5>
                             <p className="text-rose-600 text-xs font-medium leading-relaxed">
-                              {/* Hapus icon warning double jika ada */}
                               {advice.resep.replace('⚠️', '💡')}
                             </p>
                           </div>
@@ -407,45 +402,60 @@ export default function SmartFoodPrepDashboard() {
                     Daftar Pilihan Menu
                   </h3>
 
-                  {/* RENDER MEAL ITEMS (DRAGGABLE FOOD CARDS) */}
                   <div className="space-y-3">
-                    {mealItems.map((meal, index) => (
-                      <div key={`${meal.id}-${index}`} draggable onDragStart={(e) => handleDragStart(e, meal)} className="bg-white border border-slate-100 shadow-sm p-4 rounded-2xl relative group hover:border-emerald-300 hover:shadow-md transition-all cursor-grab active:cursor-grabbing">
-                        
-                        {meal.statusBahan !== "-" && (
-                          <div className="mb-2">
-                            <span className={`text-[10px] font-bold px-2 py-1.5 rounded-md inline-block max-w-full break-words whitespace-normal leading-tight ${meal.statusBahan.includes('Lengkap') || meal.statusBahan.includes('100%') ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                              {meal.statusBahan}
+                    {mealItems.map((meal, index) => {
+                      const isDrink = meal.kategori?.toUpperCase().includes('MINUMAN');
+                      const isSnack = meal.kategori?.toUpperCase().includes('SNACK') || meal.kategori?.toUpperCase().includes('RINGAN') || meal.kategori?.toUpperCase().includes('BUAH');
+                      
+                      const badgeColorClass = isDrink 
+                        ? 'bg-blue-50 text-blue-600 border-blue-200' 
+                        : isSnack 
+                          ? 'bg-purple-50 text-purple-600 border-purple-200' 
+                          : 'bg-orange-50 text-orange-600 border-orange-200';
+
+                      return (
+                        <div key={`${meal.id}-${index}`} draggable onDragStart={(e) => handleDragStart(e, meal)} className="bg-white border border-slate-100 shadow-sm p-4 rounded-2xl relative group hover:border-emerald-300 hover:shadow-md transition-all cursor-grab active:cursor-grabbing">
+                          
+                          {meal.statusBahan !== "-" && (
+                            <div className="mb-3">
+                              <span className={`text-[10px] font-bold px-2 py-1.5 rounded-md inline-block max-w-full break-words whitespace-normal leading-tight ${meal.statusBahan.includes('Lengkap') || meal.statusBahan.includes('100%') ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                                {meal.statusBahan}
+                              </span>
+                            </div>
+                          )}
+
+                          <div className="flex flex-col items-start gap-1 pr-10">
+                            <span className={`text-[9px] uppercase px-2 py-1 rounded-md font-extrabold tracking-widest border shadow-sm ${badgeColorClass}`}>
+                              {meal.kategori}
                             </span>
+                            <h4 className="font-bold text-[15px] leading-snug text-slate-800 mt-1">{meal.nama}</h4>
                           </div>
-                        )}
 
-                        <div className="flex justify-between items-start pr-12 mt-1">
-                          <h4 className="font-bold text-sm leading-snug text-slate-800">{meal.nama}</h4>
-                          <span className={`text-[9px] uppercase px-2 py-1 rounded-full font-extrabold tracking-wider shrink-0 ${meal.kategori === 'Minuman' ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'}`}>{meal.kategori}</span>
+                          {/* 👇 UX BARU: PERINGATAN DIPERSINGKAT AGAR KARTU RAPI 👇 */}
+                          {meal.resep && meal.resep.includes('⚠️') && (
+                            <div className="mt-3 bg-rose-50 border border-rose-200 p-2.5 rounded-xl flex items-center gap-2 shadow-sm">
+                              <span className="text-sm">⚠️</span>
+                              <p className="text-[10px] font-extrabold text-rose-700">Peringatan Medis. Cek Detail & Gizi!</p>
+                            </div>
+                          )}
+
+                          <p className="text-[11px] text-slate-500 mt-3 font-medium">
+                            <span className="text-emerald-600 font-bold">{meal.kalori} kcal</span> • P: {meal.protein}g • K: {meal.karbo}g
+                          </p>
+                          
+                          <button onClick={() => setRecipeModal(meal)} className="mt-3 text-[10px] uppercase font-bold text-emerald-500 hover:text-emerald-400 flex items-center gap-1">
+                            📖 Lihat Detail & Gizi
+                          </button>
+                          
+                          <button onClick={() => setSelectedMeal(meal)} className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-emerald-500 hover:text-white font-bold shadow-sm transition-all transform hover:scale-110">+</button>
                         </div>
-
-                        {meal.resep && meal.resep.includes('⚠️') && (
-                          <div className="mt-2 bg-rose-50 border border-rose-100 p-2 rounded-lg text-[10px] text-rose-600 font-bold leading-relaxed">
-                            {meal.resep}
-                          </div>
-                        )}
-
-                        <p className="text-[11px] text-slate-500 mt-2 font-medium">
-                          <span className="text-emerald-600 font-bold">{meal.kalori} kcal</span> • P: {meal.protein}g • K: {meal.karbo}g
-                        </p>
-                        <button onClick={() => setRecipeModal(meal)} className="mt-3 text-[10px] uppercase font-bold text-emerald-500 hover:text-emerald-400 flex items-center gap-1">
-                          📖 Lihat Detail & Gizi
-                        </button>
-                        <button onClick={() => setSelectedMeal(meal)} className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-emerald-500 hover:text-white font-bold shadow-sm transition-all transform hover:scale-110">+</button>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                 </div>
               );
             })()
-            // 👆 LOGIKA FILTER UI PINTAR SELESAI DI SINI 👆
           )}
 
           {isFetchingMore && (
@@ -496,8 +506,8 @@ export default function SmartFoodPrepDashboard() {
                     </div>
                   ) : (
                     weeklyPlan[day].map((meal, index) => (
-                      <div key={index} className={`border p-4 rounded-2xl relative group shadow-sm transition-all hover:shadow-md ${meal.kategori === 'Minuman' ? 'bg-blue-50/50 border-blue-100' : 'bg-emerald-50/50 border-emerald-100'}`}>
-                        <h4 className={`font-bold text-sm pr-6 truncate ${meal.kategori === 'Minuman' ? 'text-blue-700' : 'text-emerald-700'}`}>{meal.nama}</h4>
+                      <div key={index} className={`border p-4 rounded-2xl relative group shadow-sm transition-all hover:shadow-md ${meal.kategori?.toUpperCase().includes('MINUMAN') ? 'bg-blue-50/50 border-blue-100' : 'bg-emerald-50/50 border-emerald-100'}`}>
+                        <h4 className={`font-bold text-sm pr-6 truncate ${meal.kategori?.toUpperCase().includes('MINUMAN') ? 'text-blue-700' : 'text-emerald-700'}`}>{meal.nama}</h4>
                         <p className="text-[10px] text-slate-500 mt-1 font-semibold">{meal.kalori} kcal</p>
                         {!totallyLocked && (
                            <button onClick={(e) => { e.stopPropagation(); removeMeal(day, index); }} className="absolute right-2 top-2 w-6 h-6 flex items-center justify-center bg-red-100 rounded-full text-red-500 opacity-0 group-hover:opacity-100 hover:bg-red-500 hover:text-white font-bold text-xs transition-all">✕</button>
@@ -582,7 +592,7 @@ export default function SmartFoodPrepDashboard() {
             <div className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[85vh]">
               <div className="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-start">
                 <div>
-                  <span className={`text-[10px] font-bold uppercase tracking-widest mb-1 block ${recipeModal.kategori === 'Minuman' ? 'text-blue-500' : 'text-emerald-500'}`}>Detail {recipeModal.kategori}</span>
+                  <span className={`text-[10px] font-bold uppercase tracking-widest mb-1 block ${recipeModal.kategori?.toUpperCase().includes('MINUMAN') ? 'text-blue-500' : 'text-emerald-500'}`}>Detail {recipeModal.kategori}</span>
                   <h2 className="text-xl font-black text-slate-800 leading-tight">{recipeModal.nama}</h2>
                 </div>
                 <button onClick={() => setRecipeModal(null)} className="w-8 h-8 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-400 hover:text-rose-500 hover:border-rose-200 transition-colors font-bold">✕</button>
@@ -623,6 +633,7 @@ export default function SmartFoodPrepDashboard() {
                   </div>
                 </div>
 
+                {/* MODAL MENAMPILKAN PENJELASAN FULL TERMASUK ALASAN MEDIS */}
                 <h3 className="font-extrabold text-sm text-slate-800 mb-3 uppercase tracking-wider">Tinjauan Medis & Rasa:</h3>
                 <div className={`prose prose-sm max-w-none whitespace-pre-wrap font-medium p-5 rounded-2xl border ${recipeModal.resep.includes('⚠️') ? 'bg-rose-50 border-rose-200 text-rose-700' : 'bg-orange-50/50 border-orange-100 text-slate-600'}`}>
                   {recipeModal.resep}
